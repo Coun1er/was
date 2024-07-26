@@ -9,6 +9,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+    - name: Debug
+      run: |
+        echo "Server host is set: ${{ secrets.SERVER_HOST != '' }}"
+        echo "Username is set: ${{ secrets.SERVER_USERNAME != '' }}"
+        echo "SSH key is set: ${{ secrets.SERVER_SSH_KEY != '' }}"
+
     - name: Deploy to server
       uses: appleboy/ssh-action@master
       with:
@@ -19,3 +25,4 @@ jobs:
           cd warpcast_accounts_shop
           git pull origin main
           docker-compose up --build -d
+        debug: true
