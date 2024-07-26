@@ -1,0 +1,116 @@
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    ports:
+      - "5743:5743"
+      - "6123:6123"
+      - "8081:8081"
+      - "8082:8082"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - fastapi
+      - postgres
+      - pgadmin
+      - mongo-express
+    networks:
+      - bot_network
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    # ports:
+    #   - "27017:27017"
+    volumes:
+      - ./mongodb_data:/data/db
+    networks:
+      - bot_network
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongo_express
+    # ports:
+    #   - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
+    depends_on:
+      - mongodb
+    networks:
+      - bot_network
+
+  postgres:
+    image: postgres:16.3-alpine3.20
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    # ports:
+    #   - "5432:5432"
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=100"
+    networks:
+      - bot_network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    # ports:
+    #   - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - bot_network
+
+  telegram_bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram_bot
+    environment:
+      API_TOKEN: ${API_TOKEN}
+      MONGO_URL: ${MONGO_URL}
+      DB_NAME: ${DB_NAME}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - mongodb
+      - postgres
+    networks:
+      - bot_network
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    container_name: fastapi_service
+    # ports:
+    #   - "8000:8000"
+    environment:
+      API_TOKEN: ${API_TOKEN}
+      MONGO_URL: ${MONGO_URL}
+      DB_NAME: ${DB_NAME}
+      AUTH_KEY: ${AUTH_KEY}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - mongodb
+      - postgres
+    networks:
+      - bot_network
+
+networks:
+  bot_network:

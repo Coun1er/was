@@ -1,0 +1,8 @@
+env/
+.env
+
+mongodb_data
+postgres_data
+backup
+
+.DS_Store

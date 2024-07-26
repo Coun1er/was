@@ -1,0 +1,8 @@
+aiogram
+motor
+pytz
+web3
+fastapi
+uvicorn
+asyncpg
+Pillow
