@@ -45,6 +45,7 @@ PG_DATABASE_URL = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGR
 ORDERS_PER_PAGE = 5
 
 # Настройки Webhook
+DOMAIN = os.getenv("DOMAIN")
 WEBHOOK = os.getenv("WEBHOOK")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 WEB_SERVER_HOST = "0.0.0.0"
