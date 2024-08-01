@@ -578,8 +578,9 @@ async def process_quantity(message: types.Message, state: FSMContext):
     )
 
     await message.answer(
-        f"📋 Для регистрации {quantity} аккаунта(-ов) общая сумма заказа составит {total_price} USDC (по {price_per_account} за аккаунт)",
+        f"📋 Для регистрации <u>{quantity} аккаунта(-ов)</u> общая сумма заказа составит <b>{total_price} USDC</b> (по $<code>{price_per_account}</code> за аккаунт)",
         reply_markup=keyboard,
+        parse_mode="HTML",
     )
     await state.set_state(OrderStates.waiting_for_confirmation)
 
@@ -612,7 +613,6 @@ async def process_callback(callback_query: types.CallbackQuery, state: FSMContex
             "timestamp": datetime.now().isoformat(),
         }
 
-        # backup_dir = "/app/backup"
         backup_dir = "./backup"
         os.makedirs(backup_dir, exist_ok=True)
         backup_file = os.path.join(
