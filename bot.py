@@ -3,10 +3,13 @@ import io
 import json
 import os
 import uuid
+import logging
 from datetime import datetime, timedelta
 from enum import Enum
 from math import ceil
 from typing import List, Tuple
+from loguru import logger
+from aiohttp import web
 
 
 import asyncpg
@@ -17,6 +20,7 @@ from aiogram.filters import Command
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiogram.types import (
     BufferedInputFile,
     CallbackQuery,
@@ -34,14 +38,23 @@ from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
 
 
 # Настройки бота
-API_TOKEN = os.getenv("API_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URL = os.getenv("MONGO_URL")
 DB_NAME = os.getenv("DB_NAME")
 PG_DATABASE_URL = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@postgres:5432/{os.getenv("POSTGRES_DB")}'
 ORDERS_PER_PAGE = 5
 
+# Настройки Webhook
+WEBHOOK = os.getenv("WEBHOOK")
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
+WEB_SERVER_HOST = "0.0.0.0"
+WEB_SERVER_PORT = 3001
+WEBHOOK_PATH = "/webhook"
+
+logging.basicConfig(level=logging.INFO)
+
 # Инициализация бота и диспетчера
-bot = Bot(token=API_TOKEN)
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 # Подключение к MongoDB
@@ -696,7 +709,6 @@ async def check_pending_orders():
 
 
 async def check_queue_goods_table():
-    # try:
     async with asyncpg.create_pool(PG_DATABASE_URL) as pool:
         async with pool.acquire() as connection:
             # Проверяем существование таблицы
@@ -728,17 +740,52 @@ async def check_queue_goods_table():
             else:
                 print("Таблица queue_goods уже существует.")
 
-    # except Exception as e:
-    #     print(f"Ошибка при проверке/создании таблицы queue_goods: {e}")
+
+async def on_startup(bot: Bot) -> None:
+    responce = await bot.set_webhook(
+        f"{DOMAIN}{WEBHOOK_PATH}", secret_token=WEBHOOK_SECRET
+    )
+    logger.info(responce)
+    logger.info(
+        f"Telegram servers now send updates to {DOMAIN}{WEBHOOK_PATH}. Bot is online"
+    )
 
 
-# Функция для запуска бота
-async def main():
+def main_webhook() -> None:
+    # Register startup hook to initialize webhook
+    dp.startup.register(on_startup)
+
+    # Create aiohttp.web.Application instance
+    app = web.Application()
+
+    # Create an instance of request handler,
+    # aiogram has few implementations for different cases of usage
+    # In this example we use SimpleRequestHandler which is designed to handle simple cases
+    webhook_requests_handler = SimpleRequestHandler(
+        dispatcher=dp,
+        bot=bot,
+        secret_token=WEBHOOK_SECRET,
+    )
+    # Register webhook handler on application
+    webhook_requests_handler.register(app, path=WEBHOOK_PATH)
+
+    # Mount dispatcher startup and shutdown hooks to aiohttp application
+    setup_application(app, dp, bot=bot)
+
+    # And finally start webserver
+    web.run_app(app, host=WEB_SERVER_HOST, port=WEB_SERVER_PORT)
+
+
+async def main_polling():
+    await bot.delete_webhook()
     await check_pending_orders()
     await check_queue_goods_table()
-    print("Бот запущен")
+    logger.info("Бот запущен через полинг")
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    if WEBHOOK == "1":
+        main_webhook()
+    else:
+        asyncio.run(main_polling())

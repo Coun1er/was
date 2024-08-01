@@ -14,8 +14,22 @@ services:
       - postgres
       - pgadmin
       - mongo-express
+      - ngrok
     networks:
       - bot_network
+
+  ngrok:
+      image: ngrok/ngrok:alpine
+      restart: unless-stopped
+      command:
+        - "start"
+        - "--all"
+        - "--config"
+        - "/etc/ngrok.yml"
+      volumes:
+        - ./ngrok.yml:/etc/ngrok.yml
+      # ports:
+      #   - 4040:4040
 
   mongodb:
     image: mongo:latest
@@ -79,7 +93,7 @@ services:
       dockerfile: Dockerfile
     container_name: telegram_bot
     environment:
-      API_TOKEN: ${API_TOKEN}
+      BOT_TOKEN: ${BOT_TOKEN}
       MONGO_URL: ${MONGO_URL}
       DB_NAME: ${DB_NAME}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -99,7 +113,7 @@ services:
     # ports:
     #   - "8000:8000"
     environment:
-      API_TOKEN: ${API_TOKEN}
+      BOT_TOKEN: ${BOT_TOKEN}
       MONGO_URL: ${MONGO_URL}
       DB_NAME: ${DB_NAME}
       AUTH_KEY: ${AUTH_KEY}

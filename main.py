@@ -27,7 +27,7 @@ from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
 
 
 # Настройки бота
-API_TOKEN = os.getenv("API_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URL = os.getenv("MONGO_URL")
 DB_NAME = os.getenv("DB_NAME")
 PG_DATABASE_URL = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@postgres:5432/{os.getenv("POSTGRES_DB")}'
@@ -39,7 +39,7 @@ AUTH_KEY = os.getenv("AUTH_KEY")
 app = FastAPI()
 
 # Инициализация бота и диспетчера
-bot = Bot(token=API_TOKEN)
+bot = Bot(token=BOT_TOKEN)
 
 # Подключение к MongoDB
 client = AsyncIOMotorClient(MONGO_URL)
