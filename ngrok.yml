@@ -3,5 +3,5 @@ authtoken: 2k3fW2Qx47LZeuqQTLViAKkqvPb_7kTeBZb48ffARFd38wa9w
 tunnels:
   nginx:
     proto: http
-    addr: nginx:80
+    addr: telegram_bot:3001
     hostname: exact-precious-mullet.ngrok-free.app
