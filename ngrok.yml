@@ -3,5 +3,5 @@ authtoken: 2k3fW2Qx47LZeuqQTLViAKkqvPb_7kTeBZb48ffARFd38wa9w
 tunnels:
   website:
     proto: http
-    addr: 80
+    addr: 0.0.0.0:80
     hostname: exact-precious-mullet.ngrok-free.app
