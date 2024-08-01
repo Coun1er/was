@@ -28,8 +28,9 @@ services:
         - "/etc/ngrok.yml"
       volumes:
         - ./ngrok.yml:/etc/ngrok.yml
-      # ports:
-      #   - 4040:4040
+      ports:
+        - 80:80
+        - 443:443
 
   mongodb:
     image: mongo:latest
