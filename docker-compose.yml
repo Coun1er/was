@@ -29,6 +29,8 @@ services:
       - ./ngrok.yml:/etc/ngrok.yml
     depends_on:
       - nginx
+    networks:
+      - bot_network
     ports:
       - "4040:4040"
 
