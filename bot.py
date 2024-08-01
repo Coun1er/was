@@ -779,8 +779,6 @@ def main_webhook() -> None:
 
 async def main_polling():
     await bot.delete_webhook()
-    await check_pending_orders()
-    await check_queue_goods_table()
     logger.info("Бот запущен через полинг")
     await dp.start_polling(bot)
 
