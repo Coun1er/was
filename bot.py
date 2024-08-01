@@ -529,11 +529,6 @@ def calculate_price(quantity):
 async def cmd_new_order(message: types.Message, state: FSMContext):
     # price_text = generate_price_text(price_gradations)
     text = """
-<b>🚀 Качество:</b>
-- 🌍 Используются трастовые <b>европейские IP-адреса</b>
-- 💳 Оплата только <b>банковской картой</b> (не варпы!)</b>
-- 👤 Заполнена уникальная <b>аватарка, тег и ник</b>
-
 📥 <b>Введите желаемое количество аккаунтов для расчета стоимости:</b>"""
     image_path = generate_price_image(price_gradations)
     await message.answer_photo(
