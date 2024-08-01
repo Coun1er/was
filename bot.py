@@ -578,7 +578,7 @@ async def process_quantity(message: types.Message, state: FSMContext):
     )
 
     await message.answer(
-        f"📋 Для регистрации <u>{quantity} аккаунта(-ов)</u> общая сумма заказа составит <b>{total_price} USDC</b> (по <code>{price_per_account}</code> за аккаунт)",
+        f"📋 Для регистрации {quantity} аккаунта(-ов) общая сумма заказа составит <b>{total_price} USDC</b> (по {price_per_account} за аккаунт)",
         reply_markup=keyboard,
         parse_mode="HTML",
     )
