@@ -18,19 +18,19 @@ services:
     networks:
       - bot_network
 
-  ngrok:
-      image: ngrok/ngrok:alpine
-      restart: unless-stopped
-      command:
-        - "start"
-        - "--all"
-        - "--config"
-        - "/etc/ngrok.yml"
-      volumes:
-        - ./ngrok.yml:/etc/ngrok.yml
-      ports:
-        - 80:80
-        - 443:443
+  # ngrok:
+  #     image: ngrok/ngrok:alpine
+  #     restart: unless-stopped
+  #     command:
+  #       - "start"
+  #       - "--all"
+  #       - "--config"
+  #       - "/etc/ngrok.yml"
+  #     volumes:
+  #       - ./ngrok.yml:/etc/ngrok.yml
+  #     ports:
+  #       - 80:80
+  #       - 443:443
 
   mongodb:
     image: mongo:latest
