@@ -528,7 +528,7 @@ def calculate_price(quantity):
 @dp.message(Command("new_order"))
 async def cmd_new_order(message: types.Message, state: FSMContext):
     # price_text = generate_price_text(price_gradations)
-    text = "📥 <b>Введите желаемое количество аккаунтов для расчета стоимости:</b>"
+    text = "<b>🚀 Качество:</b>\n\n- 🌍 Используются трастовые <b>европейские IP-адреса</b>\n- 💳 Оплата только <b>банковской картой</b> (не варпы!)</b>\n- 👤 Заполнена уникальная <b>аватарка, тег и ник</b>\n\n📥 <b>Введите желаемое количество аккаунтов для расчета стоимости:</b>"
     image_path = generate_price_image(price_gradations)
     await message.answer_photo(
         photo=types.FSInputFile(image_path), caption=text, parse_mode="HTML"
@@ -578,7 +578,7 @@ async def process_quantity(message: types.Message, state: FSMContext):
     )
 
     await message.answer(
-        f"Для регистрации {quantity} аккаунта(-ов) общая сумма заказа составит {total_price} USDC (по ${price_per_account} за аккаунт).",
+        f"<i>📋 Для регистрации <u>{quantity} аккаунта(-ов)</u> общая сумма заказа составит <b>{total_price} USDC</b></i> (по <code>${price_per_account}</code> за аккаунт).",
         reply_markup=keyboard,
     )
     await state.set_state(OrderStates.waiting_for_confirmation)
