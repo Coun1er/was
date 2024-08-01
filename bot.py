@@ -666,82 +666,6 @@ async def invalid_confirmation_input(message: types.Message):
     await message.delete()
 
 
-async def check_pending_orders():
-    # Получаем все заказы в статусе "New"
-    current_time = datetime.now(pytz.utc)
-    pending_orders = await db.orders.find({"status": "New"}).to_list(None)
-
-    for order in pending_orders:
-        order_id = order["_id"]
-        tg_user_id = order["tg_user_id"]
-        total_price = order["price_sum"]
-        create_date = order["create_date"]
-
-        if create_date.tzinfo is None:
-            create_date = pytz.utc.localize(create_date)
-
-        # Вычисляем время окончания ожидания оплаты (15 минут после создания заказа)
-        end_time = create_date + timedelta(minutes=15)
-
-        if current_time > end_time:
-            # Время ожидания истекло, меняем статус на "Cancel"
-            await db.orders.update_one(
-                {"_id": order_id}, {"$set": {"status": "Cancel"}}
-            )
-
-            # Отправляем сообщение пользователю
-            try:
-                await bot.send_message(
-                    tg_user_id,
-                    f"❌ <b>В отведенное время оплата так и не поступила, поэтому заказ №{order_id} отменен.</b>",
-                    parse_mode="HTML",
-                )
-            except Exception as e:
-                print(f"Не удалось отправить сообщение пользователю {tg_user_id}: {e}")
-        else:
-            # Время ожидания еще не истекло, запускаем wait_for_payment
-            asyncio.create_task(
-                wait_for_payment(order_id, tg_user_id, total_price, end_time)
-            )
-
-    print(
-        f"Проверка незавершенных заказов завершена. Обработано заказов: {len(pending_orders)}"
-    )
-
-
-async def check_queue_goods_table():
-    async with asyncpg.create_pool(PG_DATABASE_URL) as pool:
-        async with pool.acquire() as connection:
-            # Проверяем существование таблицы
-            table_exists = await connection.fetchval(
-                """
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables
-                    WHERE table_name = 'queue_goods'
-                );
-            """
-            )
-
-            if not table_exists:
-                # Если таблица не существует, создаем ее
-                await connection.execute(
-                    """
-                    CREATE TABLE queue_goods (
-                        id SERIAL PRIMARY KEY,
-                        uuid UUID NOT NULL,
-                        create_date TIMESTAMP WITH TIME ZONE NOT NULL,
-                        update_date TIMESTAMP WITH TIME ZONE NOT NULL,
-                        order_id TEXT NOT NULL,
-                        user_id TEXT NOT NULL,
-                        status TEXT NOT NULL
-                    );
-                """
-                )
-                print("Таблица queue_goods успешно создана.")
-            else:
-                print("Таблица queue_goods уже существует.")
-
-
 async def on_startup(bot: Bot) -> None:
     responce = await bot.set_webhook(
         f"{DOMAIN}{WEBHOOK_PATH}", secret_token=WEBHOOK_SECRET
@@ -754,7 +678,7 @@ async def on_startup(bot: Bot) -> None:
 
 def main_webhook() -> None:
     # Register startup hook to initialize webhook
-    dp.startup.register(on_startup)
+    # dp.startup.register(on_startup)
 
     # Create aiohttp.web.Application instance
     app = web.Application()
