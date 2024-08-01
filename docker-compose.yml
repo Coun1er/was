@@ -99,6 +99,8 @@ services:
       DOMAIN: ${DOMAIN}
       WEBHOOK_SECRET: ${WEBHOOK_SECRET}
       WEBHOOK: ${WEBHOOK}
+    deploy:
+      replicas: 3
     depends_on:
       - mongodb
       - postgres
