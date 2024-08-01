@@ -785,6 +785,7 @@ async def main_polling():
 
 
 if __name__ == "__main__":
+    logger.info(f"Выбран режим: {WEBHOOK}")
     if WEBHOOK == "1":
         main_webhook()
     else:
