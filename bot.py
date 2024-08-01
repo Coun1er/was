@@ -528,7 +528,7 @@ def calculate_price(quantity):
 @dp.message(Command("new_order"))
 async def cmd_new_order(message: types.Message, state: FSMContext):
     # price_text = generate_price_text(price_gradations)
-    text = "<b>🚀 Качество:</b>\n\n- 🌍 Используются трастовые <b>европейские IP-адреса</b>\n\n📥 <b>Введите желаемое количество аккаунтов для расчета стоимости:</b>"
+    text = "<b>🚀 Качество:</b>\n\n- 🌍 Используются трастовые <b>европейские IP-адреса</b>\n- 💳 Оплата только <b>банковской картой</b> (не варпы!)</b>\n\n\n📥 <b>Введите желаемое количество аккаунтов для расчета стоимости:</b>"
     image_path = generate_price_image(price_gradations)
     await message.answer_photo(
         photo=types.FSInputFile(image_path), caption=text, parse_mode="HTML"
