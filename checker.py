@@ -309,6 +309,7 @@ async def check_queue_goods_table():
 
 
 async def main():
+    logger.info("Запустили чекер")
     await check_pending_orders()
     await check_queue_goods_table()
 
