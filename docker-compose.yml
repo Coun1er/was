@@ -1,7 +1,6 @@
 services:
   nginx:
     image: nginx:latest
-    container_name: nginx_proxy
     ports:
       - "5743:5743"
       - "6123:6123"
@@ -36,7 +35,6 @@ services:
 
   mongodb:
     image: mongo:latest
-    container_name: mongodb
     # ports:
     #   - "27017:27017"
     volumes:
@@ -46,7 +44,6 @@ services:
 
   mongo-express:
     image: mongo-express
-    container_name: mongo_express
     # ports:
     #   - "8081:8081"
     environment:
@@ -61,7 +58,6 @@ services:
 
   postgres:
     image: postgres:16.3-alpine3.20
-    container_name: postgres_db
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -79,7 +75,6 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
@@ -94,7 +89,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: telegram_bot
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       MONGO_URL: ${MONGO_URL}
@@ -102,6 +96,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DOMAIN: ${DOMAIN}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
     depends_on:
       - mongodb
       - postgres
@@ -112,7 +108,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.fastapi
-    container_name: fastapi_service
     # ports:
     #   - "8000:8000"
     environment:
