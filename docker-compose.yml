@@ -14,7 +14,7 @@ services:
       - postgres
       - pgadmin
       - mongo-express
-      - ngrok
+      # - ngrok
     networks:
       - bot_network
 
