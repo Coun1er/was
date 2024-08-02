@@ -220,6 +220,7 @@ async def cmd_order_goods(message: types.Message, order_id: str = None):
 
     # Получаем tg_id пользователя, отправившего запрос
     tg_user_id = message.from_user.id
+    logger.info(message)
 
     # Находим заказ и проверяем, принадлежит ли он пользователю
     order = await db.orders.find_one({"_id": ObjectId(order_id)})
