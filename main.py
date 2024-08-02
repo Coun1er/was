@@ -24,6 +24,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
+from custom_message import CUSTOM_MESSAGES_IN_FILE
 
 
 # Настройки бота
@@ -180,15 +181,19 @@ async def add_ready_accounts(
                         {"_id": {"$in": goods_object_ids}}
                     ).to_list(length=None)
 
-                    goods_text = "\n".join(
+                    goods_text = "\n\n\n".join(
                         [
                             f"{g['seed']}:{g['email_login']}:{g['email_pass']}"
                             for g in goods
                         ]
                     )
 
+                    # Объединяем пользовательский текст и текст товаров
+                    full_text = CUSTOM_MESSAGES_IN_FILE + goods_text
+
                     file = BufferedInputFile(
-                        goods_text.encode(), filename=f"order_{order_id[:8]}_goods.txt"
+                        full_text.encode(),
+                        filename=f"order_{str(order_id)[:8]}_warpcast_accounts.txt",
                     )
                     await bot.send_document(tg_user_id, file)
                 else:
@@ -307,13 +312,18 @@ async def add_account(account_data: AccountData):
             length=None
         )
 
-        goods_text = "\n".join(
+        goods_text = "\n\n\n".join(
             [f"{g['seed']}:{g['email_login']}:{g['email_pass']}" for g in goods]
         )
 
+        # Объединяем пользовательский текст и текст товаров
+        full_text = CUSTOM_MESSAGES_IN_FILE + goods_text
+
         file = BufferedInputFile(
-            goods_text.encode(), filename=f"order_{account_data.order_id[:8]}_goods.txt"
+            full_text.encode(),
+            filename=f"order_{account_data.order_id[:8]}_warpcast_accounts.txt",
         )
+
         await bot.send_document(tg_user_id, file)
 
     return {"status": "success", "message": "Аккаунт успешно добавлен"}
