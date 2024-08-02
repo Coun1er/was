@@ -5,9 +5,7 @@ CUSTOM_MESSAGES_IN_FILE = """
 @FACKBLOCKCHAT - чатик
 @FACKBLOCKBOT - приватка
 @SPLAYER6DKA0 - фомка
-----
-@WARPCASTREGERBOT - аки варкаст
-© @Coun1er
+@WARPCASTREGERBOT - регистрация аков варкаст
 ==========================================
 
 """
