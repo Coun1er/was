@@ -188,8 +188,12 @@ async def add_ready_accounts(
                         ]
                     )
 
+                    description_message = f"Заказ: {str(order_id)}\nФормат выдачи: private_seed:email_login:email_pass\n\n"
+
                     # Объединяем пользовательский текст и текст товаров
-                    full_text = CUSTOM_MESSAGES_IN_FILE + goods_text
+                    full_text = (
+                        description_message + CUSTOM_MESSAGES_IN_FILE + goods_text
+                    )
 
                     file = BufferedInputFile(
                         full_text.encode(),
@@ -316,8 +320,10 @@ async def add_account(account_data: AccountData):
             [f"{g['seed']}:{g['email_login']}:{g['email_pass']}" for g in goods]
         )
 
+        description_message = f"Заказ: {account_data.order_id}\nФормат выдачи: private_seed:email_login:email_pass\n\n"
+
         # Объединяем пользовательский текст и текст товаров
-        full_text = CUSTOM_MESSAGES_IN_FILE + goods_text
+        full_text = description_message + CUSTOM_MESSAGES_IN_FILE + goods_text
 
         file = BufferedInputFile(
             full_text.encode(),

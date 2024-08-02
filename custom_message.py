@@ -9,4 +9,5 @@ CUSTOM_MESSAGES_IN_FILE = """
 @WARPCASTREGERBOT - аки варкаст
 © @Coun1er
 ==========================================
+
 """

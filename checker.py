@@ -192,8 +192,12 @@ async def wait_for_payment(
                         ]
                     )
 
+                    description_message = f"Заказ: {str(order_id)}\nФормат выдачи: private_seed:email_login:email_pass\n\n"
+
                     # Объединяем пользовательский текст и текст товаров
-                    full_text = CUSTOM_MESSAGES_IN_FILE + goods_text
+                    full_text = (
+                        description_message + CUSTOM_MESSAGES_IN_FILE + goods_text
+                    )
 
                     file = BufferedInputFile(
                         full_text.encode(),
