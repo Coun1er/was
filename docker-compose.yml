@@ -19,22 +19,22 @@ services:
     networks:
       - bot_network
 
-  ngrok:
-    image: ngrok/ngrok:alpine
-    restart: unless-stopped
-    command:
-      - "start"
-      - "--all"
-      - "--config"
-      - "/etc/ngrok.yml"
-    volumes:
-      - ./ngrok.yml:/etc/ngrok.yml
-    depends_on:
-      - nginx
-    networks:
-      - bot_network
-    ports:
-      - "4040:4040"
+  # ngrok:
+  #   image: ngrok/ngrok:alpine
+  #   restart: unless-stopped
+  #   command:
+  #     - "start"
+  #     - "--all"
+  #     - "--config"
+  #     - "/etc/ngrok.yml"
+  #   volumes:
+  #     - ./ngrok.yml:/etc/ngrok.yml
+  #   depends_on:
+  #     - nginx
+  #   networks:
+  #     - bot_network
+  #   ports:
+  #     - "4040:4040"
 
   mongodb:
     image: mongo:latest
