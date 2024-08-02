@@ -233,7 +233,9 @@ async def add_ready_accounts(
 
 
 @app.post("/add_account")
-async def add_account(account_data: AccountData):
+async def add_account(
+    account_data: AccountData, auth_key: str = Depends(verify_auth_key)
+):
     # Находим заказ по order_id
     order = await db.orders.find_one({"_id": ObjectId(account_data.order_id)})
     if not order:
