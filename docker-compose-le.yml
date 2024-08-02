@@ -1,0 +1,13 @@
+services:
+  letsencrypt:
+    env_file:
+      - .env
+    ports:
+      - "80:80"
+    image: certbot/certbot:latest
+    command: certonly --standalone -d ${DOMAIN} --agree-tos --email ${EMAIL} --preferred-challenges http
+    volumes:
+      - "./letsencrypt:/etc/letsencrypt"
+    environment:
+      - DOMAIN
+      - EMAIL
