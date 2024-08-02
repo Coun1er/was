@@ -228,8 +228,8 @@ async def cmd_order_goods(message: types.Message, order_id: str = None):
         return
 
     # Проверка принадлежности заказа пользователю
-    if order.get("tg_user_id") != tg_user_id:
-        await message.answer("У вас нет доступа к этом данным")
+    if int(order.get("tg_user_id")) != tg_user_id:
+        await message.answer(f"У вас нет доступа к этим данным")
         return
 
     # Остальной код функции остается без изменений
