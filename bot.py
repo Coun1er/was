@@ -220,7 +220,6 @@ async def cmd_order_goods(message: types.Message, order_id: str = None):
 
     # Получаем tg_id пользователя, отправившего запрос
     tg_user_id = message.chat.id
-    logger.info(message)
 
     # Находим заказ и проверяем, принадлежит ли он пользователю
     order = await db.orders.find_one({"_id": ObjectId(order_id)})
@@ -230,24 +229,30 @@ async def cmd_order_goods(message: types.Message, order_id: str = None):
 
     # Проверка принадлежности заказа пользователю
     if order.get("tg_user_id") != tg_user_id:
-        await message.answer(
-            f"У вас нет доступа к этим данным {order.get('tg_user_id')} {tg_user_id}"
-        )
+        await message.answer(f"У вас нет доступа к этим данным")
         return
 
     # Остальной код функции остается без изменений
     goods_ids = order.get("goods", [])
     goods_object_ids = [ObjectId(gid) for gid in goods_ids]
     goods = await db.goods.find({"_id": {"$in": goods_object_ids}}).to_list(length=None)
+
     if not goods:
         await message.answer("Для этого заказа нет доступных товаров")
         return
-    goods_text = "\n".join(
+
+    goods_text = "\n\n\n".join(
         [f"{g['seed']}:{g['email_login']}:{g['email_pass']}" for g in goods]
     )
+
+    # Объединяем пользовательский текст и текст товаров
+    full_text = CUSTOM_MESSAGES_IN_FILE + goods_text
+
     file = BufferedInputFile(
-        goods_text.encode(), filename=f"order_{order_id[:8]}_goods.txt"
+        full_text.encode(),
+        filename=f"order_{str(order_id)[:8]}_warpcast_accounts.txt",
     )
+
     await message.answer_document(file)
 
 
