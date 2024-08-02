@@ -70,11 +70,12 @@ db = client[DB_NAME]
 
 # Градации цен
 price_gradations = [
-    (1, 0.1),
-    (6, 12.49),
-    (11, 11.99),
-    (21, 11.49),
-    (31, 10.99),
+    (1, 14.99),
+    (3, 13.99),
+    (6, 12.99),
+    (11, 12.49),
+    (21, 11.99),
+    (31, 11.49),
     (51, 10.99),
     (float("inf"), 10.99),
 ]
@@ -588,10 +589,12 @@ async def process_quantity(message: types.Message, state: FSMContext):
         if quantity < 1 or quantity > 200:
             if quantity > 200:
                 await message.answer(
-                    "Такое количество можно заказать только по дополнительному согласованию."
+                    "Такое количество можно заказать только по дополнительному согласованию, сейчас можно оформить заказ от 1 до 200 аккаунтов."
                 )
             else:
-                await message.answer("Пожалуйста, введите число от 1 до 200.")
+                await message.answer(
+                    "Пожалуйста, введите колличество аккаунтов от 1 до 200."
+                )
             return
     except ValueError:
         await message.answer(
