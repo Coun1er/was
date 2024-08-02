@@ -10,12 +10,14 @@ from math import ceil
 from typing import List, Tuple
 from loguru import logger
 from aiohttp import web
+import redis
 
 
 import asyncpg
 import pytz
 import uvicorn
 from aiogram import Bot, Dispatcher, types
+from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.filters import Command
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
@@ -54,9 +56,13 @@ WEBHOOK_PATH = "/webhook"
 
 logging.basicConfig(level=logging.INFO)
 
+# Создание подключения к Redis и его инициализация для aiogramm
+redis_client = redis.Redis(host="redis", port=6379, db=0)
+storage = RedisStorage(redis_client)
+
 # Инициализация бота и диспетчера
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
+dp = Dispatcher(storage=storage)
 
 # Подключение к MongoDB
 client = AsyncIOMotorClient(MONGO_URL)

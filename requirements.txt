@@ -7,3 +7,4 @@ uvicorn
 asyncpg
 Pillow
 loguru
+redis
