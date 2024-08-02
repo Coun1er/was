@@ -113,6 +113,9 @@ async def get_or_create_user(tg_user_id, tg_username):
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
+    # Отправляем промежуточное сообщение
+    processing_msg = await message.answer("Обработка...")
+
     user = await get_or_create_user(message.from_user.id, message.from_user.username)
     username = message.from_user.username or message.from_user.first_name
     orders = await db.orders.find({"user_id": user["_id"]}).to_list(length=None)
@@ -124,9 +127,12 @@ async def cmd_start(message: types.Message):
         response = f"👋 <b>Привет, {username}!</b> \n\n{START_TEXT} \n\nУ тебя еще нет заказов.\n\n {FUNCTION_TEXT}"
 
     keyboard = create_orders_keyboard(orders, 0)
-
     photo = FSInputFile("desc.png")
 
+    # Удаляем промежуточное сообщение
+    await processing_msg.delete()
+
+    # Отправляем финальное сообщение
     await message.answer_photo(
         photo=photo, caption=response, parse_mode="HTML", reply_markup=keyboard
     )
