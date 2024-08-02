@@ -219,7 +219,7 @@ async def cmd_order_goods(message: types.Message, order_id: str = None):
         return
 
     # Получаем tg_id пользователя, отправившего запрос
-    tg_user_id = message.from_user.id
+    tg_user_id = message.chat.id
     logger.info(message)
 
     # Находим заказ и проверяем, принадлежит ли он пользователю
@@ -229,7 +229,7 @@ async def cmd_order_goods(message: types.Message, order_id: str = None):
         return
 
     # Проверка принадлежности заказа пользователю
-    if int(order.get("tg_user_id")) != tg_user_id:
+    if order.get("tg_user_id") != tg_user_id:
         await message.answer(
             f"У вас нет доступа к этим данным {order.get('tg_user_id')} {tg_user_id}"
         )
