@@ -18,6 +18,7 @@ import pytz
 import uvicorn
 from aiogram import Bot, Dispatcher, types
 from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.filters import Command
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
@@ -57,8 +58,8 @@ WEBHOOK_PATH = "/webhook"
 logging.basicConfig(level=logging.INFO)
 
 # Создание подключения к Redis и его инициализация для aiogramm
-redis_client = redis.Redis(host="redis", port=6379, db=0)
-storage = RedisStorage(redis_client)
+# redis_client = redis.Redis(host="redis", port=6379, db=0)
+storage = RedisStorage.from_url("redis://redis:6379/0")
 
 # Инициализация бота и диспетчера
 bot = Bot(token=BOT_TOKEN)
