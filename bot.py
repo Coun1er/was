@@ -206,24 +206,30 @@ async def cmd_order_goods(message: types.Message, order_id: str = None):
         await message.answer("Пожалуйста, укажите ID заказа.")
         return
 
-    # Остальной код функции остается без изменений
+    # Получаем tg_id пользователя, отправившего запрос
+    tg_user_id = message.from_user.id
+
+    # Находим заказ и проверяем, принадлежит ли он пользователю
     order = await db.orders.find_one({"_id": ObjectId(order_id)})
     if not order:
-        await message.answer("Заказ не найден.")
+        await message.answer("Заказ не найден")
         return
 
+    # Проверка принадлежности заказа пользователю
+    if order.get("tg_user_id") != tg_user_id:
+        await message.answer("У вас нет доступа к этом данным")
+        return
+
+    # Остальной код функции остается без изменений
     goods_ids = order.get("goods", [])
     goods_object_ids = [ObjectId(gid) for gid in goods_ids]
     goods = await db.goods.find({"_id": {"$in": goods_object_ids}}).to_list(length=None)
-
     if not goods:
-        await message.answer("Для этого заказа нет доступных товаров.")
+        await message.answer("Для этого заказа нет доступных товаров")
         return
-
     goods_text = "\n".join(
         [f"{g['seed']}:{g['email_login']}:{g['email_pass']}" for g in goods]
     )
-
     file = BufferedInputFile(
         goods_text.encode(), filename=f"order_{order_id[:8]}_goods.txt"
     )
