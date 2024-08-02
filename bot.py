@@ -691,7 +691,7 @@ async def on_startup(bot: Bot) -> None:
 
 def main_webhook() -> None:
     # Register startup hook to initialize webhook
-    # dp.startup.register(on_startup)
+    dp.startup.register(on_startup)
 
     # Create aiohttp.web.Application instance
     app = web.Application()
