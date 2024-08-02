@@ -546,9 +546,16 @@ def calculate_price(quantity):
 
 @dp.message(Command("new_order"))
 async def cmd_new_order(message: types.Message, state: FSMContext):
+    # Отправляем промежуточное сообщение
+    processing_msg = await message.answer("Формируем прайс...")
+
     # price_text = generate_price_text(price_gradations)
     text = "- Для регистрации используются трастовые <b>европейские IP-адреса</b>\n- Аккаунты оплачиваются только <b>банковской картой</b> (не варпы!)\n- У аккаунтов заполнены уникальная <b>аватарка, тег и ник</b>\n\n\n📥 <b>Введите желаемое количество аккаунтов для расчета стоимости:</b>"
     image_path = generate_price_image(price_gradations)
+
+    # Удаляем промежуточное сообщение
+    await processing_msg.delete()
+
     await message.answer_photo(
         photo=types.FSInputFile(image_path), caption=text, parse_mode="HTML"
     )
@@ -610,6 +617,9 @@ async def process_callback(callback_query: types.CallbackQuery, state: FSMContex
         await state.clear()
         await cmd_new_order(callback_query.message, state)
     elif callback_query.data == "confirm_order":
+        # Отправляем промежуточное сообщение
+        processing_msg = await callback_query.message.answer("Создаем заказ...")
+
         # Генерация адреса и приватного ключа
         w3 = Web3()
         account = w3.eth.account.create()
@@ -665,6 +675,9 @@ async def process_callback(callback_query: types.CallbackQuery, state: FSMContex
         moscow_tz = pytz.timezone("Europe/Moscow")
         end_time = datetime.now(moscow_tz) + timedelta(minutes=15)
         formatted_end_time = end_time.strftime("%Y-%m-%d %H:%M:%S")
+
+        # Удаляем промежуточное сообщение
+        await processing_msg.delete()
 
         await callback_query.message.answer(
             f"""📦 Заказ <b>№{order_id}</b> на регистрацию <b>{quantity}</b> аккаунта(-ов) создан!\n\n💼 Ожидаем оплату:\n\n🔵 Сеть: BASE\n💰 Сумма: {total_price} USDC\n🏦 Адрес для перевода: <code>{pay_address}</code>\n\n⏳ Оплату будем ожидать в течение <b>15 минут до {formatted_end_time}</b>. После поступления денег вы получите сообщение об успешной оплате. По прошествии этого времени заказ будет автоматически отменен.\n\n🔔 Важная информация:\n\nУбедитесь, что вы переводите средства на правильный адрес.\nПожалуйста, переводите не меньше указанной суммы - больше можно, меньше нет.\n\nСпасибо за понимание! 💬""",
