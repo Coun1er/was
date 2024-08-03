@@ -179,6 +179,12 @@ async def wait_for_payment(
                     )
 
                     order = await db.orders.find_one({"_id": ObjectId(order_id)})
+
+                    # Cтавим статус заказа Done если все аки зареганы
+                    await db.orders.update_one(
+                        {"_id": ObjectId(order_id)}, {"$set": {"status": "Done"}}
+                    )
+
                     goods_ids = order.get("goods", [])
                     goods_object_ids = [ObjectId(gid) for gid in goods_ids]
                     goods = await db.goods.find(

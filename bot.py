@@ -415,6 +415,12 @@ async def wait_for_payment(
             # Отправляем сообщение о зарегистрированных аккаунтах
             if registered_accounts > 0:
                 if registered_accounts == order["need_accounts"]:
+
+                    # Cтавим статус заказа Done если все аки зареганы
+                    await db.orders.update_one(
+                        {"_id": ObjectId(order_id)}, {"$set": {"status": "Done"}}
+                    )
+
                     # Если все аккаунты зарегистрированы
                     completion_message = (
                         f"✅Заказ №{order_id} полностью выполнен!✅\n\n"

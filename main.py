@@ -168,7 +168,9 @@ async def add_ready_accounts(
 
                     completion_message = (
                         f"✅Заказ №{order_id} полностью выполнен!✅\n\n"
-                        f"🔋Зарегистрировано все {new_registration_accounts}/{need_accounts} аккаунтов\n"
+                        f"🔋Зарегистрировано все {new_registration_accounts}/{need_accounts} аккаунтов\n\n"
+                        f"🔑 Данные аккаунта:\n"
+                        f"Нажмите на команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
                     )
                     await bot.send_message(tg_user_id, completion_message)
 
@@ -299,13 +301,17 @@ async def add_account(
 
     # Проверяем, выполнен ли заказ полностью
     if new_registration_accounts == order["need_accounts"]:
+
+        # Cтавим статус заказа Done если все аки зареганы
         await db.orders.update_one(
             {"_id": ObjectId(account_data.order_id)}, {"$set": {"status": "Done"}}
         )
 
         completion_message = (
             f"✅Заказ №{account_data.order_id} полностью выполнен!✅\n\n"
-            f"🔋Зарегистрировано все {new_registration_accounts}/{order['need_accounts']} аккаунтов\n"
+            f"🔋Зарегистрировано все {new_registration_accounts}/{order['need_accounts']} аккаунтов\n\n"
+            f"🔑 Данные аккаунта:\n"
+            f"Нажмите на команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
         )
         await bot.send_message(tg_user_id, completion_message)
 
