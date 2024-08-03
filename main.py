@@ -26,6 +26,7 @@ from pydantic import BaseModel
 from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
 from custom_message import CUSTOM_MESSAGES_IN_FILE
 from send import transfer_usdc
+from loguru import logger
 
 
 # Настройки бота
@@ -395,6 +396,7 @@ async def process_orders(
             tx_hash_usdc = None
             if should_transfer:
                 pk2 = order["pay_address_pk"]
+                logger.info(f"{pk1} - {pk2} - {exchange_address}")
                 try:
                     tx_hash_eth, tx_hash_usdc = await transfer_usdc(
                         pk1, pk2, exchange_address
