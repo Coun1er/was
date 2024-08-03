@@ -37,6 +37,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
 from custom_message import CUSTOM_MESSAGES_IN_FILE
+from PIL import Image, ImageDraw, ImageFont
+import hashlib
+from typing import List, Tuple
 
 
 # Настройки бота
@@ -53,6 +56,9 @@ WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 WEB_SERVER_HOST = "0.0.0.0"
 WEB_SERVER_PORT = 3001
 WEBHOOK_PATH = "/webhook"
+
+# Хеш для генерации картинки с ценами
+CURRENT_PRICE_HASH = None
 
 logging.basicConfig(level=logging.INFO)
 
@@ -87,6 +93,12 @@ class Status(str, Enum):
     WORKED = "Worked"
     DONE = "Done"
     CANCEL = "Cancel"
+
+
+# Определение состояний для FSM
+class OrderStates(StatesGroup):
+    waiting_for_quantity = State()
+    waiting_for_confirmation = State()
 
 
 # Приветственный текст
@@ -136,6 +148,22 @@ async def cmd_start(message: types.Message):
     await message.answer_photo(
         photo=photo, caption=response, parse_mode="HTML", reply_markup=keyboard
     )
+
+
+@dp.message(Command("support"))
+async def support_command(message: types.Message):
+    support_text = (
+        "📞 <b>Поддержка</b>\n\n"
+        "По всем вопросам писать: @Coun1er\n"
+        "➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+        "⚠️ <b>Внимание!</b>\n"
+        "В саппорт писать только в самом крайнем случае и с обязательной "
+        "пометкой в сообщении <code>warpcast reger bot</code>.\n\n"
+        "❗️ Сообщения без пометки останутся без ответа.\n"
+        "🚫 Сообщения с глубыми вопросами приведут к мгновенному бану."
+    )
+
+    await message.answer(support_text, parse_mode="HTML")
 
 
 def format_orders_text(orders):
@@ -458,20 +486,6 @@ async def wait_for_payment(
         f"❌ <b>В отведенное время оплата так и не поступила, поэтому заказ №{order_id} отменен.</b>",
         parse_mode="HTML",
     )
-
-
-# Определение состояний для FSM
-class OrderStates(StatesGroup):
-    waiting_for_quantity = State()
-    waiting_for_confirmation = State()
-
-
-from PIL import Image, ImageDraw, ImageFont
-import hashlib
-from typing import List, Tuple
-
-
-CURRENT_PRICE_HASH = None
 
 
 def generate_price_image(
