@@ -59,6 +59,7 @@ async def transfer_usdc(pk1, pk2, exchange_address):
     address1 = w3.eth.account.from_key(pk1).address
     address2 = w3.eth.account.from_key(pk2).address
     exchange_address = w3.to_checksum_address(exchange_address)
+    logger.info(f"{address1} - {address2} - {exchange_address}")
 
     usdc_address = w3.to_checksum_address("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913")
     usdc_abi = [
