@@ -83,7 +83,6 @@ async def transfer_usdc(pk1, pk2, exchange_address):
     usdc_contract = w3.eth.contract(address=usdc_address, abi=usdc_abi)
 
     usdc_balance = await usdc_contract.functions.balanceOf(address2).call()
-    print(usdc_balance)
 
     gas_estimate = await usdc_contract.functions.transfer(
         exchange_address, usdc_balance
