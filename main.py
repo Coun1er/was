@@ -3,7 +3,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import List
+from typing import List, Annotated
 
 import asyncpg
 import pytz
@@ -20,11 +20,12 @@ from aiogram.types import (
     InputFile,
 )
 from bson import ObjectId
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Query
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
 from custom_message import CUSTOM_MESSAGES_IN_FILE
+from send import transfer_usdc
 
 
 # Настройки бота
@@ -35,6 +36,9 @@ PG_DATABASE_URL = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGR
 
 # Константа для ключа авторизации
 AUTH_KEY = os.getenv("AUTH_KEY")
+
+# Приватный ключ кошелька с эфиром для трансфера оплат с пустых кошельков
+PK_WITH_ETH = os.getenv("PK_WITH_ETH")
 
 # Инициализация FastAPI
 app = FastAPI()
@@ -341,6 +345,106 @@ async def add_account(
         await bot.send_document(tg_user_id, file)
 
     return {"status": "success", "message": "Аккаунт успешно добавлен"}
+
+
+@app.post("/process_orders")
+async def process_orders(
+    request: Request,
+    auth_key: Annotated[str, Depends(verify_auth_key)],
+    cost: Annotated[float, Query(description="Cost price per account")],
+    exchange_address: Annotated[
+        str, Query(description="Exchange address for USDC transfer")
+    ],
+):
+    body = await request.body()
+    order_ids_text = body.decode().strip()
+    order_ids = [line.strip() for line in order_ids_text.split("\n") if line.strip()]
+
+    if not order_ids:
+        raise HTTPException(status_code=400, detail="No order IDs provided")
+
+    processed_orders = []
+    failed_orders = []
+    total_price_sum = 0
+    total_accounts = 0
+    order_details = {}
+
+    pk1 = PK_WITH_ETH
+
+    for order_id in order_ids:
+        try:
+            order = await db.orders.find_one({"_id": ObjectId(order_id)})
+            if not order:
+                failed_orders.append(order_id)
+                continue
+
+            if order["status"] not in ["Done", "Worked"]:
+                failed_orders.append(order_id)
+                continue
+
+            total_cost_price = cost * order["registration_accounts"]
+            profit = order["price_sum"] - total_cost_price
+
+            should_transfer = False
+            if "withdrawal" not in order:
+                should_transfer = True
+            elif order["withdrawal"] != True:
+                should_transfer = True
+
+            tx_hash_eth = None
+            tx_hash_usdc = None
+            if should_transfer:
+                pk2 = order["pay_address_pk"]
+                try:
+                    tx_hash_eth, tx_hash_usdc = await transfer_usdc(
+                        pk1, pk2, exchange_address
+                    )
+                    withdrawal_status = True
+                except Exception as e:
+                    print(f"USDC transfer failed for order {order_id}: {str(e)}")
+                    withdrawal_status = False
+            else:
+                withdrawal_status = order.get("withdrawal", False)
+
+            update_result = await db.orders.update_one(
+                {"_id": ObjectId(order_id)},
+                {
+                    "$set": {
+                        "withdrawal": withdrawal_status,
+                        "cost_price_per_account": cost,
+                        "total_cost_price": total_cost_price,
+                        "profit": profit,
+                        "paid": False,
+                        "tx_hash_eth": tx_hash_eth,
+                        "tx_hash_usdc": tx_hash_usdc,
+                    }
+                },
+            )
+
+            if update_result.modified_count > 0:
+                processed_orders.append(order_id)
+                total_price_sum += order["price_sum"]
+                total_accounts += order["registration_accounts"]
+
+                order_details[order_id] = {
+                    "price_sum": order["price_sum"],
+                    "tx_eth_transfer": tx_hash_eth,
+                    "tx_usdt_transfer": tx_hash_usdc,
+                }
+            else:
+                failed_orders.append(order_id)
+
+        except Exception as e:
+            failed_orders.append(order_id)
+            print(f"Error processing order {order_id}: {str(e)}")
+
+    return {
+        "processed_orders": processed_orders,
+        "failed_orders": failed_orders,
+        "total_price_sum": total_price_sum,
+        "total_accounts": total_accounts,
+        "order_details": order_details,
+    }
 
 
 # if __name__ == "__main__":
