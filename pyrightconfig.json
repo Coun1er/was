@@ -1,1 +1,4 @@
-{"venvPath": ".", "venv": "env"}
+{
+  "venvPath": ".",
+  "venv": "env"
+}

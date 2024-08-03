@@ -1,46 +1,41 @@
 import asyncio
-import io
+import hashlib
 import json
+import logging
 import os
 import uuid
-import logging
 from datetime import datetime, timedelta
 from enum import Enum
 from math import ceil
 from typing import List, Tuple
-from loguru import logger
-from aiohttp import web
 
 import asyncpg
 import pytz
-import uvicorn
 from aiogram import Bot, Dispatcher, types
-from aiogram.fsm.storage.redis import RedisStorage
-from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.filters import Command
-from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import (
     BufferedInputFile,
     CallbackQuery,
+    FSInputFile,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    InputFile,
-    FSInputFile,
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.webhook.aiohttp_server import (
+    SimpleRequestHandler,
+    setup_application,
+)
+from aiohttp import web
 from bson import ObjectId
-from fastapi import FastAPI, HTTPException
+from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel
-from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
-from custom_message import CUSTOM_MESSAGES_IN_FILE
 from PIL import Image, ImageDraw, ImageFont
-import hashlib
-from typing import List, Tuple
+from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
 
+from custom_message import CUSTOM_MESSAGES_IN_FILE
 
 # Настройки бота
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -202,7 +197,6 @@ def create_orders_keyboard(orders, page):
 
     for order in current_page_orders:
         order_id = str(order["_id"])
-        order_id_short = order_id[:8]
         registration_accounts = order.get("registration_accounts", 0)
         need_accounts = order.get("need_accounts", 0)
         button_text = f"Скачать №{order_id} {registration_accounts}/{need_accounts}"
@@ -258,7 +252,7 @@ async def cmd_order_goods(message: types.Message, order_id: str = None):
 
     # Проверка принадлежности заказа пользователю
     if order.get("tg_user_id") != tg_user_id:
-        await message.answer(f"У вас нет доступа к этим данным")
+        await message.answer("У вас нет доступа к этим данным")
         return
 
     # Остальной код функции остается без изменений
@@ -415,10 +409,10 @@ async def wait_for_payment(
             # Отправляем сообщение о зарегистрированных аккаунтах
             if registered_accounts > 0:
                 if registered_accounts == order["need_accounts"]:
-
                     # Cтавим статус заказа Done если все аки зареганы
                     await db.orders.update_one(
-                        {"_id": ObjectId(order_id)}, {"$set": {"status": "Done"}}
+                        {"_id": ObjectId(order_id)},
+                        {"$set": {"status": "Done"}},
                     )
 
                     # Если все аккаунты зарегистрированы
@@ -470,7 +464,9 @@ async def wait_for_payment(
                         f"Нажмите на команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
                     )
                     await bot.send_message(
-                        tg_user_id, partial_completion_message, parse_mode="HTML"
+                        tg_user_id,
+                        partial_completion_message,
+                        parse_mode="HTML",
                     )
 
                     # Добавляем записи в PostgreSQL только для оставшихся аккаунтов
@@ -495,7 +491,8 @@ async def wait_for_payment(
 
 
 def generate_price_image(
-    price_gradations: List[Tuple[float, float]], filename: str = "price_list.png"
+    price_gradations: List[Tuple[float, float]],
+    filename: str = "price_list.png",
 ) -> str:
     global CURRENT_PRICE_HASH
     new_price_hash = hashlib.md5(str(price_gradations).encode()).hexdigest()
@@ -625,7 +622,9 @@ async def process_quantity(message: types.Message, state: FSMContext):
     price_per_account, total_price = calculate_price(quantity)
 
     await state.update_data(
-        quantity=quantity, price_per_account=price_per_account, total_price=total_price
+        quantity=quantity,
+        price_per_account=price_per_account,
+        total_price=total_price,
     )
 
     keyboard = InlineKeyboardMarkup(
@@ -686,7 +685,8 @@ async def process_callback(callback_query: types.CallbackQuery, state: FSMContex
         backup_dir = "./backup"
         os.makedirs(backup_dir, exist_ok=True)
         backup_file = os.path.join(
-            backup_dir, f"wallet_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            backup_dir,
+            f"wallet_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
         )
 
         with open(backup_file, "w") as f:

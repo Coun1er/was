@@ -1,11 +1,9 @@
 import asyncio
+import logging
+
+from hexbytes import HexBytes
 from web3 import AsyncWeb3
 from web3.providers import AsyncHTTPProvider
-from web3.exceptions import ContractLogicError
-from hexbytes import HexBytes
-
-# Предположим, что у вас есть асинхронный logger
-import logging
 
 logger = logging.getLogger(__name__)
 

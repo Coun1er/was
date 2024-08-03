@@ -1,33 +1,21 @@
-import asyncio
 import os
-import uuid
-from datetime import datetime, timedelta
-from enum import Enum
-from typing import List, Annotated
+from datetime import datetime
+from typing import Annotated
 
 import asyncpg
 import pytz
-import uvicorn
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.filters.command import Command
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
+from aiogram import Bot
 from aiogram.types import (
     BufferedInputFile,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    InputFile,
 )
 from bson import ObjectId
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
-from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
+
 from custom_message import CUSTOM_MESSAGES_IN_FILE
 from send import transfer_usdc
-from loguru import logger
-
 
 # Настройки бота
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -306,7 +294,6 @@ async def add_account(
 
     # Проверяем, выполнен ли заказ полностью
     if new_registration_accounts == order["need_accounts"]:
-
         # Cтавим статус заказа Done если все аки зареганы
         await db.orders.update_one(
             {"_id": ObjectId(account_data.order_id)}, {"$set": {"status": "Done"}}
@@ -389,7 +376,7 @@ async def process_orders(
             should_transfer = False
             if "withdrawal" not in order:
                 should_transfer = True
-            elif order["withdrawal"] != True:
+            elif not order["withdrawal"]:
                 should_transfer = True
 
             tx_hash_eth = None

@@ -1,42 +1,21 @@
 import asyncio
-import io
-import json
+import logging
 import os
 import uuid
-import logging
 from datetime import datetime, timedelta
-from enum import Enum
-from math import ceil
-from typing import List, Tuple
-from loguru import logger
-from aiohttp import web
-
 
 import asyncpg
 import pytz
-import uvicorn
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.filters.command import Command
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiogram import Bot, Dispatcher
 from aiogram.types import (
     BufferedInputFile,
-    CallbackQuery,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    InputFile,
-    FSInputFile,
 )
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 from bson import ObjectId
-from fastapi import FastAPI, HTTPException
+from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel
-from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
-from custom_message import CUSTOM_MESSAGES_IN_FILE
+from web3 import AsyncHTTPProvider, AsyncWeb3
 
+from custom_message import CUSTOM_MESSAGES_IN_FILE
 
 # Настройки бота
 BOT_TOKEN = os.getenv("BOT_TOKEN")
