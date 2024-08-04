@@ -163,7 +163,7 @@ async def add_ready_accounts(
                         f"✅Заказ №{order_id} полностью выполнен!✅\n\n"
                         f"🔋Зарегистрировано все {new_registration_accounts}/{need_accounts} аккаунтов\n\n"
                         f"🔑 Данные аккаунта:\n"
-                        f"Нажмите на команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
+                        f"Введите команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
                     )
                     await bot.send_message(tg_user_id, completion_message)
 
@@ -203,7 +203,7 @@ async def add_ready_accounts(
                         f"⚠️Ожидайте регистрацию оставшихся {remaining} аккаунта(-ов).\n\n"
                         f"📝 Заказ №: {order_id}:\n\n"
                         f"🔑 Данные аккаунтов:\n"
-                        f"Нажмите на команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
+                        f"Введите команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
                     )
                     await bot.send_message(
                         tg_user_id, partial_completion_message, parse_mode="HTML"
@@ -225,6 +225,178 @@ async def add_ready_accounts(
         "status": "success",
         "message": f"Обработано {processed_accounts} аккаунтов, {len(remaining_accounts)} добавлено в ready_accounts",
     }
+
+
+@app.post("/add_ready_accounts_by_one")
+async def add_ready_accounts_by_one(
+    request: Request, auth_key: str = Depends(verify_auth_key)
+):
+    accounts_data = await request.body()
+    accounts_data = accounts_data.decode()
+
+    accounts = []
+    for line in accounts_data.strip().split("\n"):
+        parts = line.split(":")
+        if len(parts) != 3:
+            raise HTTPException(
+                status_code=400, detail=f"Неверный формат строки: {line}"
+            )
+        accounts.append(
+            {"seed": parts[0], "email_login": parts[1], "email_pass": parts[2]}
+        )
+
+    async with asyncpg.create_pool(PG_DATABASE_URL) as pool:
+        async with pool.acquire() as connection:
+            # Получаем записи из queue_goods со статусом New
+            new_queue_items = await connection.fetch(
+                "SELECT * FROM queue_goods WHERE status = 'New'"
+            )
+
+            # Группируем queue_goods по order_id
+            grouped_queue_items = {}
+            for item in new_queue_items:
+                if item["order_id"] not in grouped_queue_items:
+                    grouped_queue_items[item["order_id"]] = []
+                grouped_queue_items[item["order_id"]].append(item)
+
+            processed_accounts = 0
+            remaining_accounts = accounts.copy()
+
+            # Создаем список заказов, которым нужны аккаунты
+            active_orders = list(grouped_queue_items.keys())
+
+            while remaining_accounts and active_orders:
+                for order_id in active_orders[:]:
+                    if not remaining_accounts:
+                        break
+
+                    queue_items = grouped_queue_items[order_id]
+                    order = await db.orders.find_one({"_id": ObjectId(order_id)})
+                    if not order:
+                        active_orders.remove(order_id)
+                        continue
+
+                    new_registration_accounts = order["registration_accounts"]
+                    need_accounts = order["need_accounts"]
+                    tg_user_id = order["tg_user_id"]
+
+                    account = remaining_accounts.pop(0)
+                    new_registration_accounts += 1
+                    processed_accounts += 1
+
+                    # Добавляем новую запись в Goods
+                    new_goods = {
+                        "create_date": datetime.now(pytz.utc),
+                        "order_id": ObjectId(order_id),
+                        "user_id": queue_items[0]["user_id"],
+                        "seed": account["seed"],
+                        "email_login": account["email_login"],
+                        "email_pass": account["email_pass"],
+                    }
+                    result = await db.goods.insert_one(new_goods)
+                    new_goods_id = result.inserted_id
+
+                    # Обновляем заказ
+                    await db.orders.update_one(
+                        {"_id": ObjectId(order_id)},
+                        {
+                            "$set": {
+                                "registration_accounts": new_registration_accounts
+                            },
+                            "$push": {"goods": new_goods_id},
+                        },
+                    )
+
+                    # Обновляем статус в queue_goods для первого элемента
+                    await connection.execute(
+                        "UPDATE queue_goods SET status = 'Done' WHERE id = $1",
+                        queue_items[0]["id"],
+                    )
+                    grouped_queue_items[order_id].pop(0)
+
+                    # Проверяем, завершен ли заказ
+                    if new_registration_accounts >= need_accounts:
+                        await db.orders.update_one(
+                            {"_id": ObjectId(order_id)}, {"$set": {"status": "Done"}}
+                        )
+                        await send_completion_message(
+                            order_id,
+                            new_registration_accounts,
+                            need_accounts,
+                            tg_user_id,
+                        )
+                        active_orders.remove(order_id)
+                    else:
+                        await send_partial_completion_message(
+                            order_id,
+                            new_registration_accounts,
+                            need_accounts,
+                            tg_user_id,
+                        )
+
+            # Записываем оставшиеся аккаунты в ready_accounts
+            for account in remaining_accounts:
+                ready_account = {
+                    "create_date": datetime.now(pytz.utc),
+                    "update_date": datetime.now(pytz.utc),
+                    "seed": account["seed"],
+                    "email_login": account["email_login"],
+                    "email_pass": account["email_pass"],
+                    "status": "available",
+                }
+                await db.ready_accounts.insert_one(ready_account)
+
+    return {
+        "status": "success",
+        "message": f"Обработано {processed_accounts} аккаунтов, {len(remaining_accounts)} добавлено в ready_accounts",
+    }
+
+
+async def send_completion_message(
+    order_id, new_registration_accounts, need_accounts, tg_user_id
+):
+    completion_message = (
+        f"✅Заказ №{order_id} полностью выполнен!✅\n\n"
+        f"🔋Зарегистрировано все {new_registration_accounts}/{need_accounts} аккаунтов\n\n"
+        f"🔑 Данные аккаунта:\n"
+        f"Введите команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
+    )
+    await bot.send_message(tg_user_id, completion_message)
+
+    order = await db.orders.find_one({"_id": ObjectId(order_id)})
+    goods_ids = order.get("goods", [])
+    goods_object_ids = [ObjectId(gid) for gid in goods_ids]
+    goods = await db.goods.find({"_id": {"$in": goods_object_ids}}).to_list(length=None)
+
+    goods_text = "\n\n\n".join(
+        [f"{g['seed']}:{g['email_login']}:{g['email_pass']}" for g in goods]
+    )
+
+    description_message = (
+        f"Заказ: {str(order_id)}\nФормат выдачи: private_seed:email_login:email_pass\n"
+    )
+    full_text = description_message + CUSTOM_MESSAGES_IN_FILE + goods_text
+
+    file = BufferedInputFile(
+        full_text.encode(),
+        filename=f"order_{str(order_id)[:8]}_warpcast_accounts.txt",
+    )
+    await bot.send_document(tg_user_id, file)
+
+
+async def send_partial_completion_message(
+    order_id, new_registration_accounts, need_accounts, tg_user_id
+):
+    remaining = need_accounts - new_registration_accounts
+    partial_completion_message = (
+        f"🎉 Зарегистрировали вам <b>1 аккаунт</b> "
+        f"{new_registration_accounts}/{need_accounts} 🎉\n"
+        f"⚠️Ожидайте регистрацию оставшихся {remaining} аккаунта(-ов).\n\n"
+        f"📝 Заказ №: {order_id}:\n\n"
+        f"🔑 Данные аккаунтов:\n"
+        f"Введите команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
+    )
+    await bot.send_message(tg_user_id, partial_completion_message, parse_mode="HTML")
 
 
 @app.post("/add_account")
@@ -283,7 +455,7 @@ async def add_account(
         f"🎉 Новый зарегистрированный аккаунт {new_registration_accounts}/{order['need_accounts']} 🎉\n"
         f"📝 Заказ №: {account_data.order_id}:\n\n"
         f"🔑 Данные аккаунта:\n"
-        f"Нажмите на команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
+        f"Введите команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
         # f"<code>{account_data.w_seed}:{account_data.w_email_login}:{account_data.w_email_pass}</code>"
     )
 
@@ -303,7 +475,7 @@ async def add_account(
             f"✅Заказ №{account_data.order_id} полностью выполнен!✅\n\n"
             f"🔋Зарегистрировано все {new_registration_accounts}/{order['need_accounts']} аккаунтов\n\n"
             f"🔑 Данные аккаунта:\n"
-            f"Нажмите на команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
+            f"Введите команду старт и кликнете на кнопку под сообщением с нужным заказом: /start"
         )
         await bot.send_message(tg_user_id, completion_message)
 
