@@ -78,7 +78,7 @@ async def wait_for_payment(
 ):
     w3 = AsyncWeb3(
         AsyncHTTPProvider(
-            "https://rpc.ankr.com/base/0fcbbecbee6b3e6cf1913685722910b744f4809c966b7f950ebec3ecb7fd29ef"
+            "https://rpc.ankr.com/base"  # /0fcbbecbee6b3e6cf1913685722910b744f4809c966b7f950ebec3ecb7fd29ef"
         )
     )
     current_dir = os.path.dirname(os.path.abspath(__file__))
