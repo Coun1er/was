@@ -14,6 +14,7 @@ from bson import ObjectId
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from web3 import AsyncHTTPProvider, AsyncWeb3
+from web3.exceptions import ContractLogicError
 
 from custom_message import CUSTOM_MESSAGES_IN_FILE
 
@@ -35,20 +36,37 @@ db = client[DB_NAME]
 
 
 async def get_usdc_balance(w3: AsyncWeb3, abi: str, address: str) -> int:
-    logger.info(0)
+    logger.info("Начало функции get_usdc_balance")
     contract_address = w3.to_checksum_address(
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
     )
-    logger.info(1)
+    logger.info(f"Контракт адрес: {contract_address}")
+
     contract_instance = w3.eth.contract(address=contract_address, abi=abi)
-    logger.info(f"Адрес который проверяем {address}")
+    logger.info(f"Адрес который проверяем: {address}")
+
     address = w3.to_checksum_address(address)
-    logger.info(f"После преобразования {address}")
-    balance_wei = await contract_instance.functions.balanceOf(address).call()
-    logger.info(3)
-    balance_human = balance_wei / 10**6
-    logger.info(f"Баланс у кошелька {address} | {balance_human}")
-    return balance_human
+    logger.info(f"После преобразования: {address}")
+
+    try:
+        # Добавляем тайм-аут в 10 секунд
+        balance_wei = await asyncio.wait_for(
+            contract_instance.functions.balanceOf(address).call(), timeout=10.0
+        )
+        logger.info(f"Получен баланс в wei: {balance_wei}")
+
+        balance_human = balance_wei / 10**6
+        logger.info(f"Баланс у кошелька {address} | {balance_human}")
+        return balance_human
+    except asyncio.TimeoutError:
+        logger.error(f"Тайм-аут при запросе баланса для адреса {address}")
+        return None
+    except ContractLogicError as e:
+        logger.error(f"Ошибка в смарт-контракте: {str(e)}")
+        return None
+    except Exception as e:
+        logger.error(f"Неожиданная ошибка при получении баланса: {str(e)}")
+        return None
 
 
 async def insert_queue_goods(order_id: str, user_id: int, num_accounts: int):
