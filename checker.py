@@ -280,6 +280,7 @@ async def check_pending_orders():
             except Exception as e:
                 print(f"Не удалось отправить сообщение пользователю {tg_user_id}: {e}")
         else:
+            logger.info(f"Запустили ожидания платежа {order_id}")
             # Время ожидания еще не истекло, запускаем wait_for_payment
             asyncio.create_task(
                 wait_for_payment(order_id, tg_user_id, total_price, end_time)
