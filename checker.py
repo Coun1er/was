@@ -35,17 +35,21 @@ db = client[DB_NAME]
 
 
 async def get_usdc_balance(w3: AsyncWeb3, abi: str, address: str) -> int:
+    logger.info(0)
     contract_address = w3.to_checksum_address(
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
     )
+    logger.info(1)
     contract_instance = w3.eth.contract(address=contract_address, abi=abi)
-
+    logger.info(2)
     max_retries = 5
     delay = 1.0
-
+    logger.info(3)
     for attempt in range(max_retries):
         try:
+            logger.info(4)
             balance_wei = await contract_instance.functions.balanceOf(address).call()
+            logger.info(5)
             balance_human = balance_wei / 10**6
             logger.info(f"Баланс у кошелька {address} | {balance_human}")
             return balance_human
