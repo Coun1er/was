@@ -39,9 +39,26 @@ async def get_usdc_balance(w3: AsyncWeb3, abi: str, address: str) -> int:
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
     )
     contract_instance = w3.eth.contract(address=contract_address, abi=abi)
-    balance_wei = await contract_instance.functions.balanceOf(address).call()
-    balance_human = balance_wei / 10**6
-    return balance_human
+
+    max_retries = 5
+    delay = 1.0
+
+    for attempt in range(max_retries):
+        try:
+            balance_wei = await contract_instance.functions.balanceOf(address).call()
+            balance_human = balance_wei / 10**6
+            return balance_human
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise Exception(
+                    f"Не удалось получить баланс USDC после {max_retries} попыток: {str(e)}"
+                )
+            print(
+                f"Ошибка при получении баланса USDC (попытка {attempt + 1}/{max_retries}): {str(e)}"
+            )
+            await asyncio.sleep(delay)
+
+    raise Exception(f"Не удалось получить баланс USDC после {max_retries} попыток")
 
 
 async def insert_queue_goods(order_id: str, user_id: int, num_accounts: int):
