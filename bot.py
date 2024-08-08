@@ -309,6 +309,7 @@ async def get_usdc_balance(w3: AsyncWeb3, abi: str, address: str) -> int:
         try:
             balance_wei = await contract_instance.functions.balanceOf(address).call()
             balance_human = balance_wei / 10**6
+            logger.info(f"Баланс у кошелька {address} | {balance_human}")
             return balance_human
         except Exception as e:
             if attempt == max_retries - 1:

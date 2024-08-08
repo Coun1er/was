@@ -47,6 +47,7 @@ async def get_usdc_balance(w3: AsyncWeb3, abi: str, address: str) -> int:
         try:
             balance_wei = await contract_instance.functions.balanceOf(address).call()
             balance_human = balance_wei / 10**6
+            logger.info(f"Баланс у кошелька {address} | {balance_human}")
             return balance_human
         except Exception as e:
             if attempt == max_retries - 1:
@@ -102,6 +103,9 @@ async def wait_for_payment(
 
         balance_in_usdc = await get_usdc_balance(
             w3=w3, abi=ERC_20, address=order["pay_address"]
+        )
+        logger.info(
+            f"Заказ {order_id} баланс кошелька {balance_in_usdc} а нужно для оплаты {total_price}"
         )
         if balance_in_usdc >= total_price or order["status"] == "Worked":
             # Оплата получена
