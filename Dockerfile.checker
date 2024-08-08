@@ -8,4 +8,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY checker.py custom_message.py .
 COPY data ./data
 
-CMD ["python", "checker.py"]
+# Копируем наш новый скрипт
+COPY run_and_wait.sh .
+
+# Даем права на выполнение скрипту
+RUN chmod +x run_and_wait.sh
+
+# Используем наш скрипт как команду запуска
+CMD ["./run_and_wait.sh"]
