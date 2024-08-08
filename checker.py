@@ -41,7 +41,9 @@ async def get_usdc_balance(w3: AsyncWeb3, abi: str, address: str) -> int:
     )
     logger.info(1)
     contract_instance = w3.eth.contract(address=contract_address, abi=abi)
-    logger.info(2)
+    logger.info(f"Адрес который проверяем {address}")
+    address = w3.to_checksum_address(address)
+    logger.info(f"После преобразования {address}")
     balance_wei = await contract_instance.functions.balanceOf(address).call()
     logger.info(3)
     balance_human = balance_wei / 10**6
