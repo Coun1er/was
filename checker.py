@@ -96,11 +96,15 @@ async def wait_for_payment(
     with open(os.path.join(current_dir, "data/erc_20_abi.json"), "r") as f:
         ERC_20 = f.read()
 
+    logger.info(
+        f"Заказ {order_id} мы внутри функции wait payment время окончания {end_time} текущие время {datetime.now(pytz.utc)}"
+    )
     while datetime.now(pytz.utc) < end_time:
+        logger.info("Зашли внутрь цикла бесконечного")
         order = await db.orders.find_one({"_id": ObjectId(order_id)})
         if not order:
             return  # Заказ не найден, выходим из функции
-
+        logger.info("Дошли до проверки баланса")
         balance_in_usdc = await get_usdc_balance(
             w3=w3, abi=ERC_20, address=order["pay_address"]
         )
