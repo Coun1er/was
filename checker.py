@@ -82,6 +82,7 @@ async def insert_queue_goods(order_id: str, user_id: int, num_accounts: int):
             """,
                 values,
             )
+            logger.info("Добавили в бд для работы")
 
 
 async def wait_for_payment(
@@ -134,8 +135,10 @@ async def wait_for_payment(
             ).to_list(length=order["need_accounts"])
             registered_accounts = min(len(available_accounts), order["need_accounts"])
 
+            logger.info(f"зареганные аккаунты {registered_accounts}")
             # Проверяем что нету готовых аккаунтов
             if registered_accounts == 0:
+                logger.info("Зашли в добавление")
                 # Если нет доступных аккаунтов, добавляем все аккаунты заказа в PostgreSQL
                 await insert_queue_goods(
                     order_id, order["user_id"], order["need_accounts"]
