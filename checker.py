@@ -14,7 +14,6 @@ from bson import ObjectId
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from web3 import AsyncHTTPProvider, AsyncWeb3
-from web3.exceptions import ContractLogicError
 
 from custom_message import CUSTOM_MESSAGES_IN_FILE
 
@@ -36,37 +35,31 @@ db = client[DB_NAME]
 
 
 async def get_usdc_balance(w3: AsyncWeb3, abi: str, address: str) -> int:
-    logger.info("Начало функции get_usdc_balance")
     contract_address = w3.to_checksum_address(
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
     )
-    logger.info(f"Контракт адрес: {contract_address}")
-
     contract_instance = w3.eth.contract(address=contract_address, abi=abi)
-    logger.info(f"Адрес который проверяем: {address}")
 
-    address = w3.to_checksum_address(address)
-    logger.info(f"После преобразования: {address}")
+    max_retries = 5
+    delay = 1.0
 
-    try:
-        # Добавляем тайм-аут в 10 секунд
-        balance_wei = await asyncio.wait_for(
-            contract_instance.functions.balanceOf(address).call(), timeout=10.0
-        )
-        logger.info(f"Получен баланс в wei: {balance_wei}")
+    for attempt in range(max_retries):
+        try:
+            balance_wei = await contract_instance.functions.balanceOf(address).call()
+            balance_human = balance_wei / 10**6
+            logger.info(f"Баланс у кошелька {address} | {balance_human}")
+            return balance_human
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise Exception(
+                    f"Не удалось получить баланс USDC после {max_retries} попыток: {str(e)}"
+                )
+            print(
+                f"Ошибка при получении баланса USDC (попытка {attempt + 1}/{max_retries}): {str(e)}"
+            )
+            await asyncio.sleep(delay)
 
-        balance_human = balance_wei / 10**6
-        logger.info(f"Баланс у кошелька {address} | {balance_human}")
-        return balance_human
-    except asyncio.TimeoutError:
-        logger.error(f"Тайм-аут при запросе баланса для адреса {address}")
-        return None
-    except ContractLogicError as e:
-        logger.error(f"Ошибка в смарт-контракте: {str(e)}")
-        return None
-    except Exception as e:
-        logger.error(f"Неожиданная ошибка при получении баланса: {str(e)}")
-        return None
+    raise Exception(f"Не удалось получить баланс USDC после {max_retries} попыток")
 
 
 async def insert_queue_goods(order_id: str, user_id: int, num_accounts: int):
