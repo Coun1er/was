@@ -289,9 +289,10 @@ async def check_pending_orders():
         else:
             logger.info(f"Запустили ожидания платежа {order_id}")
             # Время ожидания еще не истекло, запускаем wait_for_payment
-            asyncio.create_task(
-                wait_for_payment(order_id, tg_user_id, total_price, end_time)
-            )
+            await wait_for_payment(order_id, tg_user_id, total_price, end_time)
+            # asyncio.create_task(
+            #     wait_for_payment(order_id, tg_user_id, total_price, end_time)
+            # )
 
     print(
         f"Проверка незавершенных заказов завершена. Обработано заказов: {len(pending_orders)}"
