@@ -165,7 +165,7 @@ def format_orders_text(orders):
     moscow_tz = pytz.timezone("Europe/Moscow")
     for order in orders:
         order_id = str(order["_id"])
-        order_id_short = order_id[:8]
+        order_id_short = order_id[-8:]
         create_date = order.get("create_date")
         if isinstance(create_date, datetime):
             create_date = create_date.replace(tzinfo=pytz.UTC).astimezone(moscow_tz)
@@ -196,9 +196,12 @@ def create_orders_keyboard(orders, page):
 
     for order in current_page_orders:
         order_id = str(order["_id"])
+        order_id_short = order_id[-8:]
         registration_accounts = order.get("registration_accounts", 0)
         need_accounts = order.get("need_accounts", 0)
-        button_text = f"Скачать №{order_id} {registration_accounts}/{need_accounts}"
+        button_text = (
+            f"Скачать №{order_id_short} {registration_accounts}/{need_accounts}"
+        )
         keyboard_builder.row(
             InlineKeyboardButton(
                 text=button_text, callback_data=f"order_goods:{order_id}"
