@@ -538,6 +538,9 @@ async def process_orders(
                 failed_orders.append(order_id)
                 continue
 
+            if order.get("withdrawal"):
+                continue
+
             if order["status"] not in ["Done", "Worked"]:
                 failed_orders.append(order_id)
                 continue
