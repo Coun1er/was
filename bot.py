@@ -241,6 +241,11 @@ async def statspay_command(message: types.Message):
                 "withdrawn_sum": {
                     "$sum": {"$cond": [{"$eq": ["$withdrawal", True]}, "$price_sum", 0]}
                 },
+                "withdrawn_accounts": {
+                    "$sum": {
+                        "$cond": [{"$eq": ["$withdrawal", True]}, "$need_accounts", 0]
+                    }
+                },
                 "paid_profit": {
                     "$sum": {"$cond": [{"$eq": ["$paid", True]}, "$profit", 0]}
                 },
@@ -269,6 +274,7 @@ async def statspay_command(message: types.Message):
                 "total_accounts": {"$sum": "$total_accounts"},
                 "total_withdrawn": {"$sum": "$withdrawn"},
                 "total_withdrawn_sum": {"$sum": "$withdrawn_sum"},
+                "total_withdrawn_accounts": {"$sum": "$withdrawn_accounts"},
                 "total_paid_profit": {"$sum": "$paid_profit"},
                 "total_unpaid_profit": {"$sum": "$unpaid_profit"},
             }
@@ -287,6 +293,7 @@ async def statspay_command(message: types.Message):
     total_accounts = stats["total_accounts"]
     total_withdrawn = stats["total_withdrawn"]
     total_withdrawn_sum = stats["total_withdrawn_sum"]
+    total_withdrawn_accounts = stats["total_withdrawn_accounts"]
     total_paid_profit = stats["total_paid_profit"]
     total_unpaid_profit = stats["total_unpaid_profit"]
 
@@ -296,6 +303,7 @@ async def statspay_command(message: types.Message):
     # Вычисляем невыведенные заказы
     not_withdrawn = total_orders - total_withdrawn
     not_withdrawn_sum = total_sum - total_withdrawn_sum
+    not_withdrawn_accounts = total_accounts - total_withdrawn_accounts
 
     # Вычисляем среднюю прибыль с аккаунта
     avg_profit_per_account = (
@@ -306,25 +314,7 @@ async def statspay_command(message: types.Message):
 
     # Вычисляем среднюю оплату за аккаунт для невыведенных заказов
     avg_price_per_account = (
-        not_withdrawn_sum
-        / (
-            total_accounts
-            - sum(
-                status["total_accounts"]
-                for status in stats["statuses"]
-                if status["_id"] == "Done"
-            )
-        )
-        if (
-            total_accounts
-            - sum(
-                status["total_accounts"]
-                for status in stats["statuses"]
-                if status["_id"] == "Done"
-            )
-        )
-        > 0
-        else 0
+        not_withdrawn_sum / not_withdrawn_accounts if not_withdrawn_accounts > 0 else 0
     )
 
     moscow_tz = pytz.timezone("Europe/Moscow")
@@ -344,7 +334,7 @@ async def statspay_command(message: types.Message):
 - Средняя прибыль с аккаунта: <b>${avg_profit_per_account:.2f}</b>
 
 ❌ Не выведены <b>{not_withdrawn}</b> заказов на сумму <b>${not_withdrawn_sum:.2f}</b> ({not_withdrawn_sum/total_sum*100:.2f}% от общей суммы)
-- Общее количество аккаунтов в заказах: <b>{total_accounts}</b>
+- Общее количество аккаунтов в невыведенных заказах: <b>{not_withdrawn_accounts}</b>
 - Средняя оплата за аккаунт: <b>${avg_price_per_account:.2f}</b>
 """
 
