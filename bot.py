@@ -209,7 +209,7 @@ async def stats_command(message: types.Message):
     today = datetime.now(moscow_tz).strftime("%d.%m.%Y")
 
     response = f"""
-<b>Статистика заказов в работе:</b>
+<b>Статистика заказов в работе (Worked):</b>
 
 Количество заказов: <b>{total_orders}</b>
 Общая сумма заказов: <b>${total_price_sum:.2f}</b>
@@ -218,7 +218,159 @@ async def stats_command(message: types.Message):
 На сегодня ({today}) очередь на регистрацию: <b>{accounts_in_queue}</b> ({queue_percent:.2f}%)
 """
 
-    await message.reply(response, parse_mode="HTML")
+    await message.answer(response, parse_mode="HTML")
+
+
+@dp.message(Command("statspay"))
+async def statspay_command(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+
+    # Получаем статистику по заказам
+    pipeline = [
+        {"$match": {"status": {"$in": ["Worked", "Done"]}}},
+        {
+            "$group": {
+                "_id": "$status",
+                "count": {"$sum": 1},
+                "total_sum": {"$sum": "$price_sum"},
+                "total_accounts": {"$sum": "$need_accounts"},
+                "withdrawn": {
+                    "$sum": {"$cond": [{"$eq": ["$withdrawal", True]}, 1, 0]}
+                },
+                "withdrawn_sum": {
+                    "$sum": {"$cond": [{"$eq": ["$withdrawal", True]}, "$price_sum", 0]}
+                },
+                "paid_profit": {
+                    "$sum": {"$cond": [{"$eq": ["$paid", True]}, "$profit", 0]}
+                },
+                "unpaid_profit": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    {"$eq": ["$withdrawal", True]},
+                                    {"$ne": ["$paid", True]},
+                                ]
+                            },
+                            "$profit",
+                            0,
+                        ]
+                    }
+                },
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "statuses": {"$push": "$$ROOT"},
+                "total_orders": {"$sum": "$count"},
+                "total_sum": {"$sum": "$total_sum"},
+                "total_accounts": {"$sum": "$total_accounts"},
+                "total_withdrawn": {"$sum": "$withdrawn"},
+                "total_withdrawn_sum": {"$sum": "$withdrawn_sum"},
+                "total_paid_profit": {"$sum": "$paid_profit"},
+                "total_unpaid_profit": {"$sum": "$unpaid_profit"},
+            }
+        },
+    ]
+
+    result = await db.orders.aggregate(pipeline).to_list(length=None)
+
+    if not result:
+        await message.reply("На данный момент нет заказов в статусе Worked или Done.")
+        return
+
+    stats = result[0]
+    total_orders = stats["total_orders"]
+    total_sum = stats["total_sum"]
+    total_accounts = stats["total_accounts"]
+    total_withdrawn = stats["total_withdrawn"]
+    total_withdrawn_sum = stats["total_withdrawn_sum"]
+    total_paid_profit = stats["total_paid_profit"]
+    total_unpaid_profit = stats["total_unpaid_profit"]
+
+    # Вычисляем статистику по статусам
+    status_stats = {status["_id"]: status for status in stats["statuses"]}
+
+    # Вычисляем невыведенные заказы
+    not_withdrawn = total_orders - total_withdrawn
+    not_withdrawn_sum = total_sum - total_withdrawn_sum
+
+    # Вычисляем среднюю прибыль с аккаунта
+    avg_profit_per_account = (
+        (total_paid_profit + total_unpaid_profit) / total_accounts
+        if total_accounts > 0
+        else 0
+    )
+
+    # Вычисляем среднюю оплату за аккаунт для невыведенных заказов
+    avg_price_per_account = (
+        not_withdrawn_sum
+        / (
+            total_accounts
+            - sum(
+                status["total_accounts"]
+                for status in stats["statuses"]
+                if status["_id"] == "Done"
+            )
+        )
+        if (
+            total_accounts
+            - sum(
+                status["total_accounts"]
+                for status in stats["statuses"]
+                if status["_id"] == "Done"
+            )
+        )
+        > 0
+        else 0
+    )
+
+    moscow_tz = pytz.timezone("Europe/Moscow")
+    now = datetime.now(moscow_tz).strftime("%d.%m.%Y %H:%M")
+
+    response = f"""
+<b>Статистика заказов и выплат на {now} (МСК):</b>
+
+Всего заказов (Worked и Done): <b>{total_orders}</b> на общую сумму <b>${total_sum:.2f}</b>
+- Worked: <b>{status_stats.get('Worked', {}).get('count', 0)}</b> заказов на сумму <b>${status_stats.get('Worked', {}).get('total_sum', 0):.2f}</b>
+- Done: <b>{status_stats.get('Done', {}).get('count', 0)}</b> заказов на сумму <b>${status_stats.get('Done', {}).get('total_sum', 0):.2f}</b>
+
+Выводы денег:
+💰 Выведены <b>{total_withdrawn}</b> заказов на сумму <b>${total_withdrawn_sum:.2f}</b> ({total_withdrawn_sum/total_sum*100:.2f}% от общей суммы)
+- Уже выплаченная прибыль: <b>${total_paid_profit:.2f}</b>
+- Общая прибыль к выплате: <b>${total_unpaid_profit:.2f}</b>
+- Средняя прибыль с аккаунта: <b>${avg_profit_per_account:.2f}</b>
+
+❌ Не выведены <b>{not_withdrawn}</b> заказов на сумму <b>${not_withdrawn_sum:.2f}</b> ({not_withdrawn_sum/total_sum*100:.2f}% от общей суммы)
+- Общее количество аккаунтов в заказах: <b>{total_accounts}</b>
+- Средняя оплата за аккаунт: <b>${avg_price_per_account:.2f}</b>
+"""
+
+    await message.answer(response, parse_mode="HTML")
+
+
+@dp.message(Command("admin"))
+async def admin_command(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+
+    response = """
+<b>Панель администратора</b>
+
+Доступные команды:
+
+1. /stats - Статистика заказов
+   Эта команда показывает общую статистику по текущим "Worked" заказам, включая количество заказов, общее количество аккаунтов, количество зарегистрированных аккаунтов и аккаунтов в очереди.
+
+2. <code>/statspay</code> - Статистика выплат
+   Эта команда предоставляет детальную информацию о заказах в статусах "Worked" и "Done", включая общую сумму заказов, статистику по выведенным и невыведенным заказам, прибыль и среднюю стоимость аккаунта.
+
+Вы можете скопировать и вставить эти команды в чат для их использования.
+"""
+
+    await message.answer(response, parse_mode="HTML")
 
 
 def format_orders_text(orders):
