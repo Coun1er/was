@@ -197,18 +197,25 @@ async def stats_command(message: types.Message):
     total_price_sum = stats["total_price_sum"]
     accounts_in_queue = total_accounts_needed - total_accounts_registered
 
+    # Рассчитываем проценты
+    if total_accounts_needed > 0:
+        registered_percent = (total_accounts_registered / total_accounts_needed) * 100
+        queue_percent = (accounts_in_queue / total_accounts_needed) * 100
+    else:
+        registered_percent = 0
+        queue_percent = 0
+
     moscow_tz = pytz.timezone("Europe/Moscow")
     today = datetime.now(moscow_tz).strftime("%d.%m.%Y")
 
     response = f"""
 <b>Статистика заказов в работе:</b>
 
-Количество заказов в работе: <b>{total_orders}</b>
-Общая сумма заказов в работе: <b>${total_price_sum:.2f}</b>
-Общее количество аккаунтов в заказах находящихся в работе: <b>{total_accounts_needed}</b>
-Уже зарегистрировано: <b>{total_accounts_registered}</b>
-
-На сегодня ({today}) очередь на регистрацию: <b>{accounts_in_queue}</b>
+Количество заказов: <b>{total_orders}</b>
+Общая сумма заказов: <b>${total_price_sum:.2f}</b>
+Общее количество аккаунтов: <b>{total_accounts_needed}</b>
+Уже зарегистрировано: <b>{total_accounts_registered}</b> ({registered_percent:.2f}%)
+На сегодня ({today}) очередь на регистрацию: <b>{accounts_in_queue}</b> ({queue_percent:.2f}%)
 """
 
     await message.reply(response, parse_mode="HTML")
