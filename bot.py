@@ -80,6 +80,12 @@ price_gradations = [
 ]
 
 
+# Список админов
+ADMIN_IDS = [
+    306409980,
+]
+
+
 # Определение перечисления Status
 class Status(str, Enum):
     NEW = "New"
@@ -157,6 +163,55 @@ async def support_command(message: types.Message):
     )
 
     await message.answer(support_text, parse_mode="HTML")
+
+
+@dp.message(Command("stats"))
+async def stats_command(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+
+    # Получаем все заказы со статусом "Worked"
+    pipeline = [
+        {"$match": {"status": "Worked"}},
+        {
+            "$group": {
+                "_id": None,
+                "total_orders": {"$sum": 1},
+                "total_accounts_needed": {"$sum": "$need_accounts"},
+                "total_accounts_registered": {"$sum": "$registration_accounts"},
+                "total_price_sum": {"$sum": "$price_sum"},
+            }
+        },
+    ]
+
+    result = await db.orders.aggregate(pipeline).to_list(length=None)
+
+    if not result:
+        await message.reply("На данный момент нет заказов в работе.")
+        return
+
+    stats = result[0]
+    total_orders = stats["total_orders"]
+    total_accounts_needed = stats["total_accounts_needed"]
+    total_accounts_registered = stats["total_accounts_registered"]
+    total_price_sum = stats["total_price_sum"]
+    accounts_in_queue = total_accounts_needed - total_accounts_registered
+
+    moscow_tz = pytz.timezone("Europe/Moscow")
+    today = datetime.now(moscow_tz).strftime("%d.%m.%Y")
+
+    response = f"""
+<b>Статистика заказов в работе:</b>
+
+Количество заказов в работе: <b>{total_orders}</b>
+Общая сумма заказов в работе: <b>${total_price_sum:.2f}</b>
+Общее количество аккаунтов в заказах находящихся в работе: <b>{total_accounts_needed}</b>
+Уже зарегистрировано: <b>{total_accounts_registered}</b>
+
+На сегодня ({today}) очередь на регистрацию: <b>{accounts_in_queue}</b>
+"""
+
+    await message.reply(response, parse_mode="HTML")
 
 
 def format_orders_text(orders):
