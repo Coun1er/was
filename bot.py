@@ -378,7 +378,10 @@ async def cmd_postforall(message: types.Message):
 
     post_to_send = message.reply_to_message
 
-    users = await db.users.find().to_list(length=None)
+    # users = await db.users.find().to_list(length=None)
+    users = [
+        306409980,
+    ]
 
     total_users = len(users)
     success_count = 0
@@ -389,19 +392,19 @@ async def cmd_postforall(message: types.Message):
 
         for attempt in range(3):
             try:
-                # if post_to_send.photo:
-                #     await message.bot.send_photo(
-                #         chat_id=tg_user_id,
-                #         photo=post_to_send.photo[-1].file_id,
-                #         caption=post_to_send.caption,
-                #         caption_entities=post_to_send.caption_entities,
-                #     )
-                # else:
-                #     await message.bot.send_message(
-                #         chat_id=tg_user_id,
-                #         text=post_to_send.text,
-                #         entities=post_to_send.entities,
-                #     )
+                if post_to_send.photo:
+                    await message.bot.send_photo(
+                        chat_id=tg_user_id,
+                        photo=post_to_send.photo[-1].file_id,
+                        caption=post_to_send.caption,
+                        caption_entities=post_to_send.caption_entities,
+                    )
+                else:
+                    await message.bot.send_message(
+                        chat_id=tg_user_id,
+                        text=post_to_send.text,
+                        entities=post_to_send.entities,
+                    )
                 success_count += 1
                 break
             except Exception:
