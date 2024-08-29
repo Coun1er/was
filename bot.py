@@ -363,6 +363,67 @@ async def admin_command(message: types.Message):
     await message.answer(response, parse_mode="HTML")
 
 
+@dp.message(Command("postforall"))
+async def cmd_postforall(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+
+    if not message.reply_to_message:
+        await message.answer(
+            "Эта команда должна быть отправлена в ответ на сообщение, которое вы хотите разослать."
+        )
+        return
+
+    processing_msg = await message.answer("Обработка...")
+
+    post_to_send = message.reply_to_message
+
+    users = await db.users.find().to_list(length=None)
+
+    total_users = len(users)
+    success_count = 0
+    fail_count = 0
+
+    for index, user in enumerate(users, start=1):
+        tg_user_id = user["tg_user_id"]
+
+        for attempt in range(3):
+            try:
+                # if post_to_send.photo:
+                #     await message.bot.send_photo(
+                #         chat_id=tg_user_id,
+                #         photo=post_to_send.photo[-1].file_id,
+                #         caption=post_to_send.caption,
+                #         caption_entities=post_to_send.caption_entities,
+                #     )
+                # else:
+                #     await message.bot.send_message(
+                #         chat_id=tg_user_id,
+                #         text=post_to_send.text,
+                #         entities=post_to_send.entities,
+                #     )
+                success_count += 1
+                break
+            except Exception:
+                if attempt == 2:
+                    fail_count += 1
+            await asyncio.sleep(0.05)
+
+            if index % 30 == 0:
+                await processing_msg.edit_text(f"Обработка... {index}/{total_users}")
+
+    success_percent = (success_count / total_users) * 100 if total_users > 0 else 0
+    fail_percent = (fail_count / total_users) * 100 if total_users > 0 else 0
+
+    report = (
+        f"Всего пользователей: {total_users}\n"
+        f"Успешно отправлено: {success_count} ({success_percent:.2f}%)\n"
+        f"Не удалось отправить: {fail_count} ({fail_percent:.2f}%)"
+    )
+
+    await processing_msg.edit_text(report)
+
+
 def format_orders_text(orders):
     orders_text = ""
     moscow_tz = pytz.timezone("Europe/Moscow")
