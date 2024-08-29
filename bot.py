@@ -323,7 +323,7 @@ async def statspay_command(message: types.Message):
     response = f"""
 <b>Статистика заказов и выплат на {now} (МСК):</b>
 
-Всего заказов (Worked и Done): <b>{total_orders}</b> на общую сумму <b>${total_sum:.2f}</b>
+Всего заказов (Worked и Done): <b>{total_orders}</b>({total_accounts} аккаунтов) на общую сумму <b>${total_sum:.2f}</b>
 - Worked: <b>{status_stats.get('Worked', {}).get('count', 0)}</b> заказов на сумму <b>${status_stats.get('Worked', {}).get('total_sum', 0):.2f}</b>
 - Done: <b>{status_stats.get('Done', {}).get('count', 0)}</b> заказов на сумму <b>${status_stats.get('Done', {}).get('total_sum', 0):.2f}</b>
 
@@ -378,17 +378,14 @@ async def cmd_postforall(message: types.Message):
 
     post_to_send = message.reply_to_message
 
-    # users = await db.users.find().to_list(length=None)
-    users = [
-        306409980,
-    ]
+    users = await db.users.find().to_list(length=None)
 
     total_users = len(users)
     success_count = 0
     fail_count = 0
 
     for index, user in enumerate(users, start=1):
-        tg_user_id = user  # user["tg_user_id"]
+        tg_user_id = user["tg_user_id"]
 
         for attempt in range(3):
             try:
@@ -415,7 +412,6 @@ async def cmd_postforall(message: types.Message):
             if index % 30 == 0:
                 await processing_msg.edit_text(f"Обработка... {index}/{total_users}")
 
-        await asyncio.sleep(0.1)
     success_percent = (success_count / total_users) * 100 if total_users > 0 else 0
     fail_percent = (fail_count / total_users) * 100 if total_users > 0 else 0
 
