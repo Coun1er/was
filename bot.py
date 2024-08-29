@@ -407,11 +407,12 @@ async def cmd_postforall(message: types.Message):
             except Exception:
                 if attempt == 2:
                     fail_count += 1
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.05)
 
             if index % 30 == 0:
                 await processing_msg.edit_text(f"Обработка... {index}/{total_users}")
 
+        await asyncio.sleep(0.1)
     success_percent = (success_count / total_users) * 100 if total_users > 0 else 0
     fail_percent = (fail_count / total_users) * 100 if total_users > 0 else 0
 
