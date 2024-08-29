@@ -388,7 +388,7 @@ async def cmd_postforall(message: types.Message):
     fail_count = 0
 
     for index, user in enumerate(users, start=1):
-        tg_user_id = user["tg_user_id"]
+        tg_user_id = user  # user["tg_user_id"]
 
         for attempt in range(3):
             try:
