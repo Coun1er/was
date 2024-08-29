@@ -407,7 +407,7 @@ async def cmd_postforall(message: types.Message):
             except Exception:
                 if attempt == 2:
                     fail_count += 1
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.5)
 
             if index % 30 == 0:
                 await processing_msg.edit_text(f"Обработка... {index}/{total_users}")
