@@ -34,6 +34,7 @@ from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from PIL import Image, ImageDraw, ImageFont
 from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
+from collections import defaultdict
 
 from custom_message import CUSTOM_MESSAGES_IN_FILE
 
@@ -105,6 +106,35 @@ START_TEXT = "Меня зовут <b>Варпрегер Михалыч</b>, я �
 FUNCTION_TEXT = (
     "📊 <b>Чтобы посмотреть цены или оформить заказ, тыкай сюда:</b> /new_order"
 )
+
+@dp.message(Command("check_duplicates"))
+async def check_duplicates(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    result = await db.goods.find().to_list(length=None)
+
+    duplicates = defaultdict(list)
+
+    for item in result:
+        key = (item['seed'], item['email_login'], item['email_pass'])
+        duplicates[key].append(item)
+
+    response = ""
+
+    for key, items in duplicates.items():
+        if len(items) > 1:
+            response += f"Дубликаты для seed={key[0]}, email_login={key[1]}, email_pass={key[2]}:\n\n"
+            for item in items:
+                response += (f"_id: {item['_id']}, create_data: {item['create_data']}, "
+                             f"order_id: {item['order_id']}, user_id: {item['user_id']}, "
+                             f"seed: {item['seed']}, email_login: {item['email_login']}, "
+                             f"email_pass: {item['email_pass']}\n")
+            response += "\n\n"
+
+    if response:
+        await message.answer(response)
+    else:
+        await message.answer("Дубликатов не найдено.")
 
 
 # Функция для получения или создания пользователя
