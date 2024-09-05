@@ -125,7 +125,7 @@ async def check_duplicates(message: types.Message):
         if len(items) > 1:
             response += f"Дубликаты для seed={key[0]}, email_login={key[1]}, email_pass={key[2]}:\n\n"
             for item in items:
-                response += (f"_id: {item['_id']}, create_data: {item['create_data']}, "
+                response += (f"_id: {item['_id']}, create_date: {item['create_date']}, "
                              f"order_id: {item['order_id']}, user_id: {item['user_id']}, "
                              f"seed: {item['seed']}, email_login: {item['email_login']}, "
                              f"email_pass: {item['email_pass']}\n")
