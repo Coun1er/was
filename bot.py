@@ -110,7 +110,7 @@ FUNCTION_TEXT = (
 @dp.message(Command("check_duplicates"))
 async def check_duplicates(message: types.Message):
     if message.from_user.id not in ADMIN_IDS:
-        return
+            return
     result = await db.goods.find().to_list(length=None)
 
     duplicates = defaultdict(list)
@@ -119,20 +119,24 @@ async def check_duplicates(message: types.Message):
         key = (item['seed'], item['email_login'], item['email_pass'])
         duplicates[key].append(item)
 
-    response = ""
+    full_text = ""
 
     for key, items in duplicates.items():
         if len(items) > 1:
-            response += f"Дубликаты для seed={key[0]}, email_login={key[1]}, email_pass={key[2]}:\n\n"
+            full_text += f"Дубликаты для seed={key[0]}, email_login={key[1]}, email_pass={key[2]}:\n\n"
             for item in items:
-                response += (f"_id: {item['_id']}, create_date: {item['create_date']}, "
-                             f"order_id: {item['order_id']}, user_id: {item['user_id']}, "
-                             f"seed: {item['seed']}, email_login: {item['email_login']}, "
-                             f"email_pass: {item['email_pass']}\n")
-            response += "\n\n"
+                full_text += (f"_id: {item['_id']}, create_data: {item['create_data']}, "
+                              f"order_id: {item['order_id']}, user_id: {item['user_id']}, "
+                              f"seed: {item['seed']}, email_login: {item['email_login']}, "
+                              f"email_pass: {item['email_pass']}\n")
+            full_text += "\n\n"
 
-    if response:
-        await message.answer(response)
+    if full_text:
+        file = BufferedInputFile(
+            full_text.encode(),
+            filename="duplicates_report.txt"
+        )
+        await bot.send_document(message.from_user.id, file, caption="Отчет о дубликатах")
     else:
         await message.answer("Дубликатов не найдено.")
 
