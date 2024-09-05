@@ -33,7 +33,7 @@ async def send_transaction_with_retry(w3, transaction, private_key, max_attempts
     for attempt in range(max_attempts):
         try:
             signed_tx = w3.eth.account.sign_transaction(transaction, private_key)
-            tx_hash = await w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash = await w3.eth.send_raw_transaction(signed_tx.raw_transaction)
             success = await verify_tx(w3, tx_hash)
             if success:
                 return tx_hash
