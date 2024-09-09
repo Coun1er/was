@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import uuid
+from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from math import ceil
@@ -34,7 +35,6 @@ from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from PIL import Image, ImageDraw, ImageFont
 from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
-from collections import defaultdict
 
 from custom_message import CUSTOM_MESSAGES_IN_FILE
 
@@ -107,16 +107,17 @@ FUNCTION_TEXT = (
     "📊 <b>Чтобы посмотреть цены или оформить заказ, тыкай сюда:</b> /new_order"
 )
 
+
 @dp.message(Command("check_duplicates"))
 async def check_duplicates(message: types.Message):
     if message.from_user.id not in ADMIN_IDS:
-            return
+        return
     result = await db.goods.find().to_list(length=None)
 
     duplicates = defaultdict(list)
 
     for item in result:
-        key = (item['seed'], item['email_login'], item['email_pass'])
+        key = (item["seed"], item["email_login"], item["email_pass"])
         duplicates[key].append(item)
 
     full_text = ""
@@ -125,18 +126,19 @@ async def check_duplicates(message: types.Message):
         if len(items) > 1:
             full_text += f"Дубликаты для seed={key[0]}, email_login={key[1]}, email_pass={key[2]}:\n\n"
             for item in items:
-                full_text += (f"_id: {item['_id']}, create_date: {item['create_date']}, "
-                              f"order_id: {item['order_id']}, user_id: {item['user_id']}, "
-                              f"seed: {item['seed']}, email_login: {item['email_login']}, "
-                              f"email_pass: {item['email_pass']}\n")
+                full_text += (
+                    f"_id: {item['_id']}, create_date: {item['create_date']}, "
+                    f"order_id: {item['order_id']}, user_id: {item['user_id']}, "
+                    f"seed: {item['seed']}, email_login: {item['email_login']}, "
+                    f"email_pass: {item['email_pass']}\n"
+                )
             full_text += "\n\n"
 
     if full_text:
-        file = BufferedInputFile(
-            full_text.encode(),
-            filename="duplicates_report.txt"
+        file = BufferedInputFile(full_text.encode(), filename="duplicates_report.txt")
+        await bot.send_document(
+            message.from_user.id, file, caption="Отчет о дубликатах"
         )
-        await bot.send_document(message.from_user.id, file, caption="Отчет о дубликатах")
     else:
         await message.answer("Дубликатов не найдено.")
 
@@ -370,6 +372,108 @@ async def statspay_command(message: types.Message):
 ❌ Не выведены <b>{not_withdrawn}</b> заказов на сумму <b>${not_withdrawn_sum:.2f}</b> ({not_withdrawn_sum/total_sum*100:.2f}% от общей суммы)
 - Общее количество аккаунтов в невыведенных заказах: <b>{not_withdrawn_accounts}</b>
 - Средняя оплата за аккаунт: <b>${avg_price_per_account:.2f}</b>
+"""
+
+    await message.answer(response, parse_mode="HTML")
+
+
+@dp.message(Command("statsprofit"))
+async def statsprofit_command(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+
+    # Получаем статистику по заказам
+    pipeline = [
+        {"$match": {"status": {"$in": ["Worked", "Done"]}}},
+        {
+            "$group": {
+                "_id": "$status",
+                "count": {"$sum": 1},
+                "total_sum": {"$sum": "$price_sum"},
+                "total_accounts": {"$sum": "$need_accounts"},
+                "withdrawn": {
+                    "$sum": {"$cond": [{"$eq": ["$withdrawal", True]}, 1, 0]}
+                },
+                "withdrawn_sum": {
+                    "$sum": {"$cond": [{"$eq": ["$withdrawal", True]}, "$price_sum", 0]}
+                },
+                "withdrawn_accounts": {
+                    "$sum": {
+                        "$cond": [{"$eq": ["$withdrawal", True]}, "$need_accounts", 0]
+                    }
+                },
+                "paid_profit": {
+                    "$sum": {"$cond": [{"$eq": ["$paid", True]}, "$profit", 0]}
+                },
+                "unpaid_profit": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    {"$eq": ["$withdrawal", True]},
+                                    {"$ne": ["$paid", True]},
+                                ]
+                            },
+                            "$profit",
+                            0,
+                        ]
+                    }
+                },
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "statuses": {"$push": "$$ROOT"},
+                "total_orders": {"$sum": "$count"},
+                "total_sum": {"$sum": "$total_sum"},
+                "total_accounts": {"$sum": "$total_accounts"},
+                "total_withdrawn": {"$sum": "$withdrawn"},
+                "total_withdrawn_sum": {"$sum": "$withdrawn_sum"},
+                "total_withdrawn_accounts": {"$sum": "$withdrawn_accounts"},
+                "total_paid_profit": {"$sum": "$paid_profit"},
+                "total_unpaid_profit": {"$sum": "$unpaid_profit"},
+            }
+        },
+    ]
+
+    result = await db.orders.aggregate(pipeline).to_list(length=None)
+
+    if not result:
+        await message.reply("На данный момент нет заказов в статусе Worked или Done.")
+        return
+
+    stats = result[0]
+    total_orders = stats["total_orders"]
+    total_sum = stats["total_sum"]
+    total_accounts = stats["total_accounts"]
+    total_paid_profit = stats["total_paid_profit"]
+    total_unpaid_profit = stats["total_unpaid_profit"]
+
+    # Вычисляем статистику по статусам
+    status_stats = {status["_id"]: status for status in stats["statuses"]}
+
+    # Вычисляем среднюю прибыль с аккаунта
+    avg_profit_per_account = (
+        (total_paid_profit + total_unpaid_profit) / total_accounts
+        if total_accounts > 0
+        else 0
+    )
+
+    moscow_tz = pytz.timezone("Europe/Moscow")
+    now = datetime.now(moscow_tz).strftime("%d.%m.%Y %H:%M")
+
+    response = f"""
+<b>Статистика заказов и выплат на {now} (МСК):</b>
+
+Всего заказов (Worked и Done): <b>{total_orders}</b>({total_accounts} аккаунтов) на общую сумму <b>${total_sum:.2f}</b>
+- Worked: <b>{status_stats.get('Worked', {}).get('count', 0)}</b> заказов на сумму <b>${status_stats.get('Worked', {}).get('total_sum', 0):.2f}</b>
+- Done: <b>{status_stats.get('Done', {}).get('count', 0)}</b> заказов на сумму <b>${status_stats.get('Done', {}).get('total_sum', 0):.2f}</b>
+
+💰 Выплаты денег:
+- Уже выплаченная прибыль: <b>${total_paid_profit:.2f}</b>
+- Общая прибыль к выплате: <b>${total_unpaid_profit:.2f}</b>
+- Средняя прибыль с аккаунта: <b>${avg_profit_per_account:.2f}</b>
 """
 
     await message.answer(response, parse_mode="HTML")
