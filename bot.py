@@ -480,6 +480,39 @@ async def statsprofit_command(message: types.Message):
     await message.answer(response, parse_mode="HTML")
 
 
+@dp.message(Command("calcmoney"))
+async def calcmoney_command(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+
+    # Находим все заказы в статусе 'Done' или 'Worked' с withdrawal: true и paid: false
+    orders_to_update = await db.orders.find(
+        {"status": {"$in": ["Done", "Worked"]}, "withdrawal": True, "paid": False}
+    ).to_list(None)
+
+    if not orders_to_update:
+        await message.answer("Нет заказов для обновления.")
+        return
+
+    # Обновляем найденные заказы
+    update_result = await db.orders.update_many(
+        {
+            "_id": {"$in": [order["_id"] for order in orders_to_update]},
+            "status": {"$in": ["Done", "Worked"]},
+            "withdrawal": True,
+            "paid": False,
+        },
+        {"$set": {"paid": True}},
+    )
+
+    # Формируем ответное сообщение
+    response = f"Обновлено заказов: <b>{update_result.modified_count}</b>\n"
+    total_profit = sum(order.get("profit", 0) for order in orders_to_update)
+    response += f"Общая прибыль для вывода: <b>{total_profit:.2f}</b>"
+
+    await message.answer(response, parse_mode="HTML")
+
+
 @dp.message(Command("admin"))
 async def admin_command(message: types.Message):
     if message.from_user.id not in ADMIN_IDS:
@@ -495,6 +528,10 @@ async def admin_command(message: types.Message):
 
 2. /statspay - Статистика выплат
    Эта команда предоставляет детальную информацию о заказах в статусах "Worked" и "Done", включая общую сумму заказов, статистику по выведенным и невыведенным заказам, прибыль и среднюю стоимость аккаунта.
+
+3. /statsprofit - Статистика прибыли для бизнеса
+
+4. /calcmoney - Сделать выплату по заказам которые имеют статус Done или Worked и withdrawl: true
 
 Вы можете скопировать и вставить эти команды в чат для их использования.
 """
