@@ -466,7 +466,7 @@ async def statsprofit_command(message: types.Message):
     response = f"""
 <b>Статистика заказов и выплат на {now} (МСК):</b>
 
-Всего заказов (Worked и Done): <b>{total_orders}</b>({total_accounts} аккаунтов) на общую сумму <b>${total_sum:.2f}</b>
+Всего заказов (Worked и Done): <b>{total_orders}</b> (всего <b>{total_accounts}</b> аккаунтов, {total_accounts / total_orders} аккаунтов в среднем в заказе) на общую сумму <b>${total_sum:.2f}</b>
 - Worked: <b>{status_stats.get('Worked', {}).get('count', 0)}</b> заказов на сумму <b>${status_stats.get('Worked', {}).get('total_sum', 0):.2f}</b>
 - Done: <b>{status_stats.get('Done', {}).get('count', 0)}</b> заказов на сумму <b>${status_stats.get('Done', {}).get('total_sum', 0):.2f}</b>
 
@@ -474,6 +474,7 @@ async def statsprofit_command(message: types.Message):
 - Уже выплаченная прибыль: <b>${total_paid_profit:.2f}</b>
 - Общая прибыль к выплате: <b>${total_unpaid_profit:.2f}</b>
 - Средняя прибыль с аккаунта: <b>${avg_profit_per_account:.2f}</b>
+- Средняя цена продажи каждого аккаунта: <b>${total_sum / total_accounts:.2f}</b>
 """
 
     await message.answer(response, parse_mode="HTML")
