@@ -466,7 +466,7 @@ async def statsprofit_command(message: types.Message):
     response = f"""
 <b>Статистика заказов и выплат на {now} (МСК):</b>
 
-Всего заказов (Worked и Done): <b>{total_orders}</b> (всего <b>{total_accounts}</b> аккаунтов, <b>{total_accounts / total_orders:2f}</b> аккаунтов в среднем в заказе) на общую сумму <b>${total_sum:.2f}</b>
+Всего заказов (Worked и Done): <b>{total_orders}</b> (всего <b>{total_accounts}</b> аккаунтов, <b>{int(total_accounts / total_orders):2d}</b> аккаунтов средний заказ) на общую сумму <b>${total_sum:.2f}</b>
 - Worked: <b>{status_stats.get('Worked', {}).get('count', 0)}</b> заказов на сумму <b>${status_stats.get('Worked', {}).get('total_sum', 0):.2f}</b>
 - Done: <b>{status_stats.get('Done', {}).get('count', 0)}</b> заказов на сумму <b>${status_stats.get('Done', {}).get('total_sum', 0):.2f}</b>
 
