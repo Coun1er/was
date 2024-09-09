@@ -88,7 +88,7 @@ async def transfer_usdc(pk1, pk2, exchange_address):
     ).estimate_gas({"from": address2})
     gas_price = await w3.eth.gas_price
     eth_needed = gas_estimate * gas_price
-    eth_to_send = int(eth_needed * 1.05)
+    eth_to_send = int(eth_needed * 1.2)
     print("how need gas", eth_to_send)
 
     # Отправка ETH с первого кошелька на второй
