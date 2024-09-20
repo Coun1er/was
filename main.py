@@ -8,6 +8,7 @@ from aiogram import Bot
 from aiogram.types import (
     BufferedInputFile,
 )
+from helper import generate_account_list_file
 from bson import ObjectId
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from loguru import logger
@@ -176,24 +177,27 @@ async def add_ready_accounts(
                         {"_id": {"$in": goods_object_ids}}
                     ).to_list(length=None)
 
-                    goods_text = "\n".join(
-                        [
-                            f"{g['seed']}:{g['email_login']}:{g['email_pass']}"
-                            for g in goods
-                        ]
-                    )
+                    # goods_text = "\n".join(
+                    #     [
+                    #         f"{g['seed']}:{g['email_login']}:{g['email_pass']}"
+                    #         for g in goods
+                    #     ]
+                    # )
 
-                    description_message = f"Заказ: {str(order_id)}\nФормат выдачи: private_seed:email_login:email_pass\n"
+                    # description_message = f"Заказ: {str(order_id)}\nФормат выдачи: private_seed:email_login:email_pass\n"
 
-                    # Объединяем пользовательский текст и текст товаров
-                    full_text = (
-                        description_message + CUSTOM_MESSAGES_IN_FILE + goods_text
-                    )
+                    # # Объединяем пользовательский текст и текст товаров
+                    # full_text = (
+                    #     description_message + CUSTOM_MESSAGES_IN_FILE + goods_text
+                    # )
 
-                    file = BufferedInputFile(
-                        full_text.encode(),
-                        filename=f"order_{str(order_id)[:8]}_warpcast_accounts.txt",
-                    )
+                    # file = BufferedInputFile(
+                    #     full_text.encode(),
+                    #     filename=f"order_{str(order_id)[:8]}_warpcast_accounts.txt",
+                    # )
+
+                    file = generate_account_list_file(order_id=order_id, custom_messages=CUSTOM_MESSAGES_IN_FILE, goods=goods)
+
                     await bot.send_document(tg_user_id, file)
                 else:
                     remaining = need_accounts - new_registration_accounts
@@ -368,19 +372,22 @@ async def send_completion_message(
     goods_object_ids = [ObjectId(gid) for gid in goods_ids]
     goods = await db.goods.find({"_id": {"$in": goods_object_ids}}).to_list(length=None)
 
-    goods_text = "\n".join(
-        [f"{g['seed']}:{g['email_login']}:{g['email_pass']}" for g in goods]
-    )
+    # goods_text = "\n".join(
+    #     [f"{g['seed']}:{g['email_login']}:{g['email_pass']}" for g in goods]
+    # )
 
-    description_message = (
-        f"Заказ: {str(order_id)}\nФормат выдачи: private_seed:email_login:email_pass\n"
-    )
-    full_text = description_message + CUSTOM_MESSAGES_IN_FILE + goods_text
+    # description_message = (
+    #     f"Заказ: {str(order_id)}\nФормат выдачи: private_seed:email_login:email_pass\n"
+    # )
+    # full_text = description_message + CUSTOM_MESSAGES_IN_FILE + goods_text
 
-    file = BufferedInputFile(
-        full_text.encode(),
-        filename=f"order_{str(order_id)[:8]}_warpcast_accounts.txt",
-    )
+    # file = BufferedInputFile(
+    #     full_text.encode(),
+    #     filename=f"order_{str(order_id)[:8]}_warpcast_accounts.txt",
+    # )
+
+    file = generate_account_list_file(order_id=order_id, custom_messages=CUSTOM_MESSAGES_IN_FILE, goods=goods)
+
     await bot.send_document(tg_user_id, file)
 
 
@@ -488,19 +495,21 @@ async def add_account(
             length=None
         )
 
-        goods_text = "\n".join(
-            [f"{g['seed']}:{g['email_login']}:{g['email_pass']}" for g in goods]
-        )
+        # goods_text = "\n".join(
+        #     [f"{g['seed']}:{g['email_login']}:{g['email_pass']}" for g in goods]
+        # )
 
-        description_message = f"Заказ: {account_data.order_id}\nФормат выдачи: private_seed:email_login:email_pass\n"
+        # description_message = f"Заказ: {account_data.order_id}\nФормат выдачи: private_seed:email_login:email_pass\n"
 
-        # Объединяем пользовательский текст и текст товаров
-        full_text = description_message + CUSTOM_MESSAGES_IN_FILE + goods_text
+        # # Объединяем пользовательский текст и текст товаров
+        # full_text = description_message + CUSTOM_MESSAGES_IN_FILE + goods_text
 
-        file = BufferedInputFile(
-            full_text.encode(),
-            filename=f"order_{account_data.order_id[:8]}_warpcast_accounts.txt",
-        )
+        # file = BufferedInputFile(
+        #     full_text.encode(),
+        #     filename=f"order_{account_data.order_id[:8]}_warpcast_accounts.txt",
+        # )
+
+        file = generate_account_list_file(order_id=account_data.order_id, custom_messages=CUSTOM_MESSAGES_IN_FILE, goods=goods)
 
         await bot.send_document(tg_user_id, file)
 

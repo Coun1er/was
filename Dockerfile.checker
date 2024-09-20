@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY checker.py custom_message.py .
+COPY helper.py checker.py custom_message.py .
 COPY data ./data
 
 # Копируем наш новый скрипт
