@@ -198,7 +198,7 @@ async def wait_for_payment(
                         {"_id": {"$in": goods_object_ids}}
                     ).to_list(length=None)
 
-                    goods_text = "\n\n\n".join(
+                    goods_text = "\n".join(
                         [
                             f"{g['seed']}:{g['email_login']}:{g['email_pass']}"
                             for g in goods

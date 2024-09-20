@@ -176,7 +176,7 @@ async def add_ready_accounts(
                         {"_id": {"$in": goods_object_ids}}
                     ).to_list(length=None)
 
-                    goods_text = "\n\n\n".join(
+                    goods_text = "\n".join(
                         [
                             f"{g['seed']}:{g['email_login']}:{g['email_pass']}"
                             for g in goods
@@ -368,7 +368,7 @@ async def send_completion_message(
     goods_object_ids = [ObjectId(gid) for gid in goods_ids]
     goods = await db.goods.find({"_id": {"$in": goods_object_ids}}).to_list(length=None)
 
-    goods_text = "\n\n\n".join(
+    goods_text = "\n".join(
         [f"{g['seed']}:{g['email_login']}:{g['email_pass']}" for g in goods]
     )
 
@@ -488,7 +488,7 @@ async def add_account(
             length=None
         )
 
-        goods_text = "\n\n\n".join(
+        goods_text = "\n".join(
             [f"{g['seed']}:{g['email_login']}:{g['email_pass']}" for g in goods]
         )
 
