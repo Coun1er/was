@@ -24,5 +24,6 @@ jobs:
         script: |
           cd warpcast_accounts_shop
           git pull origin main
+          docker system prune -a --volumes
           docker compose up --build -d
         debug: true
