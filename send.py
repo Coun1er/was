@@ -49,7 +49,7 @@ async def send_transaction_with_retry(w3, transaction, private_key, max_attempts
 async def transfer_usdc(pk1, pk2, exchange_address):
     w3 = AsyncWeb3(
         AsyncHTTPProvider(
-            "https://rpc.ankr.com/base/0fcbbecbee6b3e6cf1913685722910b744f4809c966b7f950ebec3ecb7fd29ef"
+            "https://base-mainnet.infura.io/v3/fba5287e171e4a2286d3321864cbae56"
         )
     )
 
