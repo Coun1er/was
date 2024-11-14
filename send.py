@@ -86,7 +86,8 @@ async def transfer_usdc(pk1, pk2, exchange_address):
     gas_estimate = await usdc_contract.functions.transfer(
         exchange_address, usdc_balance
     ).estimate_gas({"from": address2})
-    gas_price = await w3.eth.gas_price
+    raw_gas_price = await w3.eth.gas_price
+    gas_price = int(raw_gas_price * 2)
     eth_needed = gas_estimate * gas_price
     eth_to_send = int(eth_needed * 2)
     print("how need gas", eth_to_send)
