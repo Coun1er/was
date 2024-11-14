@@ -567,7 +567,6 @@ async def process_orders(
             tx_hash_usdc = None
             if should_transfer:
                 pk2 = order["pay_address_pk"]
-                logger.info(f"{pk1} - {pk2} - {exchange_address}")
                 try:
                     tx_hash_eth, tx_hash_usdc = await transfer_usdc(
                         pk1, pk2, exchange_address
